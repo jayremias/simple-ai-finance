@@ -1,22 +1,24 @@
 {
-  "name": "finance-v2",
+  "name": "moneylens",
   "version": "1.0.0",
-  "main": "index.ts",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
-  },
-  "dependencies": {
-    "expo": "~55.0.4",
-    "expo-status-bar": "~55.0.4",
-    "react": "19.2.0",
-    "react-native": "0.83.2"
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "test": "turbo test",
+    "mobile": "bun --cwd apps/mobile run start",
+    "mobile:ios": "bun --cwd apps/mobile run ios",
+    "mobile:android": "bun --cwd apps/mobile run android"
   },
   "devDependencies": {
-    "@types/react": "~19.2.2",
+    "@biomejs/biome": "^1.9.4",
+    "turbo": "^2.5.4",
     "typescript": "~5.9.2"
-  },
-  "private": true
+  }
 }

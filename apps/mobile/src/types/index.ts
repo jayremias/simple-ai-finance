@@ -1,0 +1,43 @@
+export interface Transaction {
+  id: string;
+  name: string;
+  date: string;
+  amount: number;
+  category: string;
+  paymentMethod?: string;
+  icon?: string;
+  iconBg?: string;
+}
+
+export interface WeeklyData {
+  day: string;
+  amount: number;
+  isActive?: boolean;
+}
+
+export interface AIInsight {
+  message: string;
+  type: 'info' | 'warning' | 'success';
+}
+
+export interface ReceiptDetail {
+  imageUri: string;
+  category: string;
+  amount: number;
+  date: string;
+  insight: AIInsight;
+}
+
+export type RootStackParamList = {
+  MainTabs: undefined;
+  ReceiptDetail: { receipt: ReceiptDetail };
+  WeeklyAnalysis: undefined;
+};
+
+export type MainTabParamList = {
+  Home: undefined;
+  Analytics: undefined;
+  Scan: undefined;
+  Profile: undefined;
+  Settings: undefined;
+};

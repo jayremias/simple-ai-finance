@@ -1,0 +1,52 @@
+{
+  "name": "@moneylens/mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo start --ios",
+    "android": "expo start --android",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@moneylens/shared": "*",
+    "@react-navigation/bottom-tabs": "^7.15.2",
+    "@react-navigation/native": "^7.1.31",
+    "@react-navigation/native-stack": "^7.14.2",
+    "@tamagui/animations-react-native": "^2.0.0-rc.21",
+    "@tamagui/config": "^2.0.0-rc.21",
+    "@tamagui/core": "^2.0.0-rc.21",
+    "@tamagui/helpers": "^2.0.0-rc.21",
+    "@tamagui/native": "^2.0.0-rc.21",
+    "@tamagui/portal": "^2.0.0-rc.21",
+    "@tamagui/z-index-stack": "^2.0.0-rc.21",
+    "@tanstack/react-query": "^5.75.5",
+    "@types/react-native": "^0.72.8",
+    "axios": "^1.9.0",
+    "babel-preset-expo": "^55.0.10",
+    "date-fns": "^4.1.0",
+    "expo": "~55.0.4",
+    "expo-document-picker": "^55.0.8",
+    "expo-image-picker": "^55.0.10",
+    "expo-secure-store": "^14.2.0",
+    "expo-status-bar": "~55.0.4",
+    "react": "19.2.0",
+    "react-hook-form": "^7.56.2",
+    "react-native": "0.83.2",
+    "react-native-gesture-handler": "^2.30.0",
+    "react-native-reanimated": "4.2.1",
+    "react-native-safe-area-context": "5.6.2",
+    "react-native-screens": "4.23.0",
+    "react-native-svg": "^15.15.3",
+    "react-native-worklets": "0.7.2",
+    "tamagui": "^2.0.0-rc.21",
+    "victory-native": "^41.20.2",
+    "zod": "^3.24.3",
+    "zustand": "^5.0.4"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~5.9.2"
+  },
+  "private": true
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@moneylens/shared",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.2"
+  },
+  "private": true
+}
