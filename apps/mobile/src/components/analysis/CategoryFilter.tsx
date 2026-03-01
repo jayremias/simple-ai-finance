@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Colors } from '../theme/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '@/theme/colors';
 
 interface CategoryFilterProps {
   selected: string;
@@ -11,7 +12,7 @@ export function CategoryFilter({ selected, onPress }: CategoryFilterProps) {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <Text style={styles.label}>{selected}</Text>
-      <Text style={styles.chevron}>⌄</Text>
+      <Ionicons name="chevron-down" size={16} color={Colors.textSecondary} />
     </TouchableOpacity>
   );
 }
@@ -30,10 +31,5 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontSize: 14,
     fontWeight: '600',
-  },
-  chevron: {
-    color: Colors.textSecondary,
-    fontSize: 16,
-    lineHeight: 18,
   },
 });

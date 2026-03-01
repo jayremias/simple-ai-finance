@@ -1,13 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors } from '../theme/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '@/theme/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function ScanPlaceholderScreen() {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <Text style={styles.icon}>📷</Text>
+      <Ionicons name="camera-outline" size={64} color={Colors.textSecondary} />
       <Text style={styles.title}>Scan Receipt</Text>
       <Text style={styles.subtitle}>Point your camera at a receipt to scan and categorize it automatically</Text>
       <TouchableOpacity style={styles.button}>
@@ -26,7 +27,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     gap: 16,
   },
-  icon: { fontSize: 56 },
   title: {
     color: Colors.textPrimary,
     fontSize: 24,

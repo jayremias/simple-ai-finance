@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { WeeklyData } from '../../types';
-import { Colors } from '../theme/colors';
+import { Colors } from '@/theme/colors';
 
 const { width } = Dimensions.get('window');
 const CHART_HEIGHT = 180;

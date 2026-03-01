@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../theme/colors';
+import { Colors } from '@/theme/colors';
 
 interface HomeHeaderProps {
   userName: string;
@@ -15,7 +16,7 @@ export function HomeHeader({ userName, onNotification }: HomeHeaderProps) {
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <View style={styles.userSection}>
         <View style={styles.avatarContainer}>
-          <Text style={styles.avatarEmoji}>👤</Text>
+          <Ionicons name="person-circle-outline" size={28} color={Colors.textSecondary} />
         </View>
         <View>
           <Text style={styles.welcomeText}>Welcome back,</Text>
@@ -23,7 +24,7 @@ export function HomeHeader({ userName, onNotification }: HomeHeaderProps) {
         </View>
       </View>
       <TouchableOpacity style={styles.notificationBtn} onPress={onNotification}>
-        <Text style={styles.bellIcon}>🔔</Text>
+        <Ionicons name="notifications-outline" size={22} color={Colors.textPrimary} />
       </TouchableOpacity>
     </View>
   );
@@ -52,9 +53,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.borderLight,
   },
-  avatarEmoji: {
-    fontSize: 24,
-  },
   welcomeText: {
     color: Colors.textSecondary,
     fontSize: 13,
@@ -71,8 +69,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceBg,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  bellIcon: {
-    fontSize: 18,
   },
 });

@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../theme/colors';
+import { Colors } from '@/theme/colors';
 
 interface AppHeaderProps {
   title: string;
@@ -16,7 +17,7 @@ export function AppHeader({ title, onBack, rightIcons }: AppHeaderProps) {
       <View style={styles.content}>
         {onBack ? (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backIcon}>‹</Text>
+            <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
           </TouchableOpacity>
         ) : (
           <View style={styles.backButton} />
@@ -45,12 +46,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceBg,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  backIcon: {
-    color: Colors.textPrimary,
-    fontSize: 28,
-    lineHeight: 32,
-    marginTop: -2,
   },
   title: {
     flex: 1,

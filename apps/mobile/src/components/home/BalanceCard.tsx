@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { Colors } from '../theme/colors';
+import { Colors } from '@/theme/colors';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 40;

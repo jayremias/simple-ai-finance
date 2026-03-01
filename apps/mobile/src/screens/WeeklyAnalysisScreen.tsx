@@ -7,8 +7,9 @@ import {
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { Colors } from '../theme/colors';
+import { Colors } from '@/theme/colors';
 import { mockWeeklyData, mockTransactions } from '../utils/mockData';
 import { WeeklyData } from '../types';
 import { AppHeader } from '../components/common/AppHeader';
@@ -39,10 +40,10 @@ export function WeeklyAnalysisScreen() {
         rightIcons={
           <View style={styles.headerIcons}>
             <TouchableOpacity>
-              <Text style={styles.headerIcon}>⬇</Text>
+              <Ionicons name="download-outline" size={22} color={Colors.textPrimary} />
             </TouchableOpacity>
             <TouchableOpacity>
-              <Text style={styles.headerIcon}>📅</Text>
+              <Ionicons name="calendar-outline" size={22} color={Colors.textPrimary} />
             </TouchableOpacity>
           </View>
         }
@@ -109,9 +110,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     width: 'auto',
-  },
-  headerIcon: {
-    color: Colors.textPrimary,
-    fontSize: 18,
   },
 });

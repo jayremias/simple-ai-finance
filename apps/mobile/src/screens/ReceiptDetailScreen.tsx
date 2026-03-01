@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../theme/colors';
+import { Colors } from '@/theme/colors';
 import { RootStackParamList } from '../types';
 import { AppHeader } from '../components/common/AppHeader';
 import { AIInsightCard } from '../components/receipt/AIInsightCard';

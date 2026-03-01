@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Colors } from '../theme/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '@/theme/colors';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 interface AIActionButtonProps {
   label: string;
-  icon: string;
+  icon: IoniconsName;
   gradientColors: string[];
   onPress: () => void;
 }
@@ -16,7 +19,7 @@ function AIActionButton({ label, icon, gradientColors, onPress }: AIActionButton
       onPress={onPress}
       activeOpacity={0.85}
     >
-      <Text style={styles.actionIcon}>{icon}</Text>
+      <Ionicons name={icon} size={22} color={Colors.textPrimary} />
       <Text style={styles.actionLabel}>{label}</Text>
     </TouchableOpacity>
   );
@@ -36,25 +39,25 @@ export function FeedAISection({ onScanReceipt, onUploadFile, onVoiceEntry, onMan
       <View style={styles.grid}>
         <AIActionButton
           label="Scan Receipt"
-          icon="📷"
+          icon="camera-outline"
           gradientColors={[Colors.brandBlue, '#1A5FCC']}
           onPress={onScanReceipt}
         />
         <AIActionButton
           label="Upload File"
-          icon="📄"
+          icon="document-outline"
           gradientColors={[Colors.brandPurple, '#5B1F8E']}
           onPress={onUploadFile}
         />
         <AIActionButton
           label="Voice Entry"
-          icon="🎤"
+          icon="mic-outline"
           gradientColors={[Colors.brandTeal, Colors.brandTealDark]}
           onPress={onVoiceEntry}
         />
         <AIActionButton
           label="Manual Entry"
-          icon="+"
+          icon="add-outline"
           gradientColors={[Colors.surfaceBg, Colors.surfaceLight]}
           onPress={onManualEntry}
         />

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Colors } from '../theme/colors';
+import { Colors } from '@/theme/colors';
 import { mockBalance, mockTransactions } from '../utils/mockData';
 import { RootStackParamList } from '../types';
 import { HomeHeader } from '../components/home/HomeHeader';

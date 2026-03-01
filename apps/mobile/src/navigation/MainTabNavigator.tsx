@@ -1,27 +1,25 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { MainTabParamList } from '../types';
 import { HomeScreen } from '../screens/HomeScreen';
-import { Colors } from '../theme/colors';
+import { Colors } from '@/theme/colors';
 import { AnalyticsPlaceholderScreen } from '../screens/AnalyticsPlaceholderScreen';
 import { ScanPlaceholderScreen } from '../screens/ScanPlaceholderScreen';
 import { ProfilePlaceholderScreen } from '../screens/ProfilePlaceholderScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-function TabBarIcon({ name, focused }: { name: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    Home: '⌂',
-    Analytics: '⬛',
-    Scan: '⊡',
-    Profile: '○',
-    Settings: '⚙',
-  };
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+
+function TabBarIcon({ name, focused }: { name: IoniconsName; focused: boolean }) {
   return (
-    <Text style={{ fontSize: 20, color: focused ? Colors.textPrimary : Colors.textMuted }}>
-      {icons[name]}
-    </Text>
+    <Ionicons
+      name={name}
+      size={24}
+      color={focused ? Colors.textPrimary : Colors.textMuted}
+    />
   );
 }
 
@@ -46,22 +44,22 @@ export function MainTabNavigator() {
       <Tab.Screen
         name="Home"
         component={HomeScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabBarIcon name="Home" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabBarIcon name={focused ? 'home' : 'home-outline'} focused={focused} /> }}
       />
       <Tab.Screen
         name="Analytics"
         component={AnalyticsPlaceholderScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabBarIcon name="Analytics" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabBarIcon name={focused ? 'bar-chart' : 'bar-chart-outline'} focused={focused} /> }}
       />
       <Tab.Screen
         name="Scan"
         component={ScanPlaceholderScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabBarIcon name="Scan" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabBarIcon name={focused ? 'scan' : 'scan-outline'} focused={focused} /> }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfilePlaceholderScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabBarIcon name="Profile" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabBarIcon name={focused ? 'person' : 'person-outline'} focused={focused} /> }}
       />
     </Tab.Navigator>
   );

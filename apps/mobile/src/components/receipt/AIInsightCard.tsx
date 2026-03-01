@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../theme/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '@/theme/colors';
 
 interface AIInsightCardProps {
   message: string;
@@ -10,7 +11,7 @@ export function AIInsightCard({ message }: AIInsightCardProps) {
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
-        <Text style={styles.icon}>💡</Text>
+        <Ionicons name="bulb-outline" size={20} color={Colors.brandBlue} />
       </View>
       <View style={styles.content}>
         <Text style={styles.title}>AI Insights</Text>
@@ -39,9 +40,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
-  },
-  icon: {
-    fontSize: 18,
   },
   content: {
     flex: 1,

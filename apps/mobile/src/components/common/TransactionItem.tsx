@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Transaction } from '../../types';
-import { Colors } from '../theme/colors';
+import { Colors } from '@/theme/colors';
 
 interface TransactionItemProps {
   transaction: Transaction;

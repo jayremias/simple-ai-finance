@@ -1,13 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../theme/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '@/theme/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function ProfilePlaceholderScreen() {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <Text style={styles.icon}>👤</Text>
+      <Ionicons name="person-outline" size={64} color={Colors.textSecondary} />
       <Text style={styles.title}>Profile</Text>
       <Text style={styles.subtitle}>Manage your account and preferences</Text>
     </View>
@@ -23,7 +24,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     gap: 16,
   },
-  icon: { fontSize: 56 },
   title: {
     color: Colors.textPrimary,
     fontSize: 24,
