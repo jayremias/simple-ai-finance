@@ -1,0 +1,17 @@
+meta {
+  name: Unban User
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/auth/admin/unban-user
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "userId": "<paste-user-id-here>"
+  }
+}

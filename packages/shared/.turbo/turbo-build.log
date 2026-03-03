@@ -1,0 +1,2 @@
+$ echo 'No build step — consumed as TypeScript directly'
+No build step — consumed as TypeScript directly
