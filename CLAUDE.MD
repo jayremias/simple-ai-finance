@@ -24,7 +24,7 @@ Mobile-first personal finance app for tracking accounts, expenses, income, and s
 - **Framework**: Hono (lightweight, fast routing, middleware-friendly, native Bun support)
 - **ORM**: Drizzle ORM (type-safe, SQL-like syntax, great migration tooling)
 - **Validation**: Zod (schemas shared between client and server via shared package)
-- **Auth**: Custom JWT (access + refresh token pattern; social sign-in via provider SDKs)
+- **Auth**: Better Auth (session-based auth, social sign-in, email verification)
 - **Email**: Resend or AWS SES (transactional emails)
 - **Scheduler**: Bun cron or node-cron (daily recurring payment generation)
 - **File Upload**: Pre-signed S3 URLs (client uploads directly to S3)
@@ -48,7 +48,8 @@ bun dev              # Start dev servers (via Turborepo)
 bun run build        # Production build
 bun run lint         # Biome check
 bun run format       # Biome format --write
-bun run db:generate  # Generate Drizzle migrations
+bun run db:push      # Push schema to DB (local dev — no migration files)
+bun run db:generate  # Generate Drizzle migrations (end of feature, when asked)
 bun run db:migrate   # Apply migrations
 bun run db:studio    # Open Drizzle Studio
 bun run test         # Run tests (Bun test runner for API, Jest for mobile)
@@ -149,7 +150,7 @@ Zod is the **single validation library** across the entire stack. All schemas li
 | Form validation        | `packages/shared/schemas/`                | `createTransactionSchema`, `loginSchema`             |
 | API request bodies     | `packages/shared/schemas/`                | Same schemas used in Hono middleware validation      |
 | API response types     | `packages/shared/schemas/`                | `transactionResponseSchema`, `accountResponseSchema` |
-| Environment variables  | `apps/api/src/env.ts`                     | `envSchema.parse(process.env)`                       |
+| Environment variables  | `apps/api/src/lib/*/env.ts`               | `envSchema.parse(process.env)` (one per lib/feature) |
 | Query/URL params       | `packages/shared/schemas/` or route-level | `paginationSchema`, `dateRangeSchema`                |
 | External API responses | `apps/api/src/lib/`                       | Validate AI provider responses, S3 responses         |
 
@@ -161,6 +162,7 @@ Zod is the **single validation library** across the entire stack. All schemas li
 - Schemas defined in `apps/api/src/lib/db/` using `pgTable` (split by domain)
 - Config in `apps/api/drizzle.config.ts`
 - Migrations via Drizzle Kit (`drizzle-kit generate`, `drizzle-kit migrate`)
+- **Local dev**: Use `db:push` (`drizzle-kit push`) to apply schema changes directly — no migration files. Generate migration files only at the end of a feature, when explicitly asked.
 - Use Drizzle's query builder — avoid raw SQL
 
 ### Schema Conventions
@@ -177,14 +179,12 @@ Zod is the **single validation library** across the entire stack. All schemas li
 
 ## Authentication
 
-- Custom JWT implementation (no third-party auth service)
-- **Access token**: JWT, 15-minute expiry, contains user ID and tier
-- **Refresh token**: opaque string stored in DB, 30-day expiry, rotated on every use
-- Tokens stored in device secure storage via `expo-secure-store` (not AsyncStorage)
-- On 401, client automatically attempts refresh before failing
-- Social sign-in: Google + Apple via provider SDKs
-- Passwords hashed with Argon2id (bcrypt fallback)
-- Email verification and password reset via transactional email
+- **Better Auth** — session-based authentication library
+- Sessions managed by Better Auth (cookies/bearer tokens, DB-backed)
+- Social sign-in: Google + Apple via Better Auth plugins
+- Email verification and password reset handled by Better Auth
+- Session tokens stored in device secure storage via `expo-secure-store` (not AsyncStorage)
+- Better Auth manages its own DB tables (user, session, account, verification)
 
 ## API Design
 
@@ -192,7 +192,7 @@ Zod is the **single validation library** across the entire stack. All schemas li
 
 1. **CORS** — configured for mobile client origins
 2. **Rate Limiter** — per-IP and per-user limits (stricter on auth routes)
-3. **Auth** — verify JWT, attach user to context (skip for public routes)
+3. **Auth** — Better Auth session middleware, attach user to context (skip for public routes)
 4. **Tier Check** — verify user's subscription tier allows the action
 5. **Validation** — Zod schema validation on request body/params
 6. **Handler** — route-specific business logic
@@ -260,3 +260,5 @@ When implementing features, use **Context7** to look up the latest API patterns 
 - When planning always give your thoughts about the request. If you see ways to improve, suggest them.
 - You can use external packages — they just need to be well maintained and secure
 - We can implement in steps. First simple solution to validate the implementation and code. Get feedback. Then improve.
+- You can ask for human interaction to solve things. I am a experience 20+ yrs developer.
+- Never use workarounds — if something doesn't work, ask for help. We are a team.

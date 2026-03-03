@@ -1,0 +1,19 @@
+meta {
+  name: Invite Member
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/auth/organization/invite-member
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "organizationId": "<paste-org-id-here>",
+    "email": "invitee@example.com",
+    "role": "member"
+  }
+}

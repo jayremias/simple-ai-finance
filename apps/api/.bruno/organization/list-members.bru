@@ -1,0 +1,11 @@
+meta {
+  name: List Members
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/auth/organization/list-members?organizationId=<paste-org-id-here>
+  body: none
+  auth: inherit
+}
