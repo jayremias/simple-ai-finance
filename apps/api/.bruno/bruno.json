@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "MoneyLens API",
+  "type": "collection",
+  "ignore": ["node_modules", "dist"]
+}

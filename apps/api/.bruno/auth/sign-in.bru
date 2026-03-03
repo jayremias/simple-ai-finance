@@ -1,0 +1,33 @@
+meta {
+  name: Sign In
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/auth/sign-in/email
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  if (body && body.token) {
+    bru.setEnvVar("token", body.token);
+  }
+  // Also check for set-cookie header with session token
+  const setCookie = res.getHeader("set-cookie");
+  if (setCookie) {
+    const match = setCookie.match(/better-auth\.session_token=([^;]+)/);
+    if (match) {
+      bru.setEnvVar("token", match[1]);
+    }
+  }
+}

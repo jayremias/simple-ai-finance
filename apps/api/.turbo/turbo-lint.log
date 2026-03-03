@@ -1,0 +1,282 @@
+$ biome check src/
+src/env.ts format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+    10 10 │   
+    11 11 │   if (env.NODE_ENV === "production" && env.CORS_ORIGINS === "*") {
+    12    │ - → console.warn("[security]·CORS_ORIGINS·is·set·to·'*'·in·production·—·restrict·to·specific·origins");
+       12 │ + → console.warn(
+       13 │ + → → "[security]·CORS_ORIGINS·is·set·to·'*'·in·production·—·restrict·to·specific·origins",
+       14 │ + → );
+    13 15 │   }
+    14 16 │   
+  
+
+src/lib/permissions/constants.ts format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+     15  15 │   
+     16  16 │   export const PLATFORM_ROLES = {
+     17     │ - → admin:·[
+     18     │ - → → "user.list",
+     19     │ - → → "user.read",
+     20     │ - → → "user.ban",
+     21     │ - → → "user.delete",
+     22     │ - → → "user.set-role",
+     23     │ - → → "user.impersonate",
+     24     │ - → ],
+         17 │ + → admin:·["user.list",·"user.read",·"user.ban",·"user.delete",·"user.set-role",·"user.impersonate"],
+     25  18 │   	user: [],
+     26  19 │   } as const satisfies Record<string, readonly PlatformPermission[]>;
+    ······· │ 
+    103  96 │   // ---------------------------------------------------------------------------
+    104  97 │   
+    105     │ - export·function·platformRoleHasPermission(
+    106     │ - → role:·string,
+    107     │ - → permission:·PlatformPermission,
+    108     │ - ):·boolean·{
+         98 │ + export·function·platformRoleHasPermission(role:·string,·permission:·PlatformPermission):·boolean·{
+    109  99 │   	const permissions = PLATFORM_ROLES[role as PlatformRole];
+    110 100 │   	if (!permissions) return false;
+    ······· │ 
+    112 102 │   }
+    113 103 │   
+    114     │ - export·function·accountRoleHasPermission(
+    115     │ - → role:·string,
+    116     │ - → permission:·AccountPermission,
+    117     │ - ):·boolean·{
+        104 │ + export·function·accountRoleHasPermission(role:·string,·permission:·AccountPermission):·boolean·{
+    118 105 │   	const permissions = ACCOUNT_ROLES[role as AccountRole];
+    119 106 │   	if (!permissions) return false;
+  
+
+src/middleware/permissions.ts:192:5 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Template literals are preferred over string concatenation.
+  
+    190 │ 			//   return tx?.accountId ?? null;
+    191 │ 			throw new Error(
+  > 192 │ 				`Account ID lookup from "${source.table}" table is not yet implemented. ` +
+        │ 				^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 193 │ 					"Requires financial_account and related tables.",
+        │ 					^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    194 │ 			);
+    195 │ 	}
+  
+  i Unsafe fix: Use a template literal.
+  
+    190 190 │   			//   return tx?.accountId ?? null;
+    191 191 │   			throw new Error(
+    192     │ - → → → → `Account·ID·lookup·from·"${source.table}"·table·is·not·yet·implemented.·`·+
+    193     │ - → → → → → "Requires·financial_account·and·related·tables.",
+        192 │ + → → → → `Account·ID·lookup·from·"${source.table}"·table·is·not·yet·implemented.·Requires·financial_account·and·related·tables.`,
+    194 193 │   			);
+    195 194 │   	}
+  
+
+src/middleware/permissions.ts:8:8 lint/style/useImportType  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some named imports are only used as types.
+  
+     6 │ 	PlatformPermission,
+     7 │ } from "@/lib/permissions/constants";
+   > 8 │ import {
+       │        ^
+   > 9 │ 	ACCOUNT_ROLES,
+  > 10 │ 	PLATFORM_ROLES,
+  > 11 │ 	accountRoleHasPermission,
+  > 12 │ 	platformRoleHasPermission,
+  > 13 │ } from "@/lib/permissions/constants";
+       │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    14 │ import type { AuthVariables } from "./auth";
+    15 │ 
+  
+  i This import is only used as a type.
+  
+     8 │ import {
+     9 │ 	ACCOUNT_ROLES,
+  > 10 │ 	PLATFORM_ROLES,
+       │ 	^^^^^^^^^^^^^^
+    11 │ 	accountRoleHasPermission,
+    12 │ 	platformRoleHasPermission,
+  
+  i Importing the types with import type ensures that they are removed by the compilers and avoids loading unnecessary modules.
+  
+  i Safe fix: Add inline type keywords.
+  
+    10 │ → type·PLATFORM_ROLES,
+       │   +++++               
+
+src/middleware/permissions.ts organizeImports ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Import statements could be sorted:
+  
+      1     │ - import·type·{·Context·}·from·"hono";
+      2     │ - import·{·createMiddleware·}·from·"hono/factory";
+      3     │ - import·type·{
+          1 │ + import·type·{
+      4   2 │   	AccountPermission,
+      5   3 │   	AccountRole,
+    ······· │ 
+     12  10 │   	platformRoleHasPermission,
+     13  11 │   } from "@/lib/permissions/constants";
+     14     │ - import·type·{·AuthVariables·}·from·"./auth";
+         12 │ + import·type·{·Context·}·from·"hono";
+         13 │ + import·{·createMiddleware·}·from·"hono/factory";
+         14 │ + import·type·{·AuthVariables·}·from·"./auth";
+     15  15 │   
+     16  16 │   // ---------------------------------------------------------------------------
+  
+
+src/middleware/permissions.ts format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+     92  92 │   	source: AccountIdSource = { from: "param", name: "id" },
+     93  93 │   ) {
+     94     │ - → return·createMiddleware<{·Variables:·AccountPermissionVariables·}>(
+     95     │ - → → async·(c,·next)·=>·{
+     96     │ - → → → const·user·=·c.get("user");
+     97     │ - → → → if·(!user)·{
+     98     │ - → → → → return·c.json(
+     99     │ - → → → → → {
+    100     │ - → → → → → → error:·{
+    101     │ - → → → → → → → code:·"UNAUTHORIZED",
+    102     │ - → → → → → → → message:·"Authentication·required",
+    103     │ - → → → → → → },
+    104     │ - → → → → → },
+    105     │ - → → → → → 401,
+    106     │ - → → → → );
+    107     │ - → → → }
+         94 │ + → return·createMiddleware<{·Variables:·AccountPermissionVariables·}>(async·(c,·next)·=>·{
+         95 │ + → → const·user·=·c.get("user");
+         96 │ + → → if·(!user)·{
+         97 │ + → → → return·c.json(
+         98 │ + → → → → {
+         99 │ + → → → → → error:·{
+        100 │ + → → → → → → code:·"UNAUTHORIZED",
+        101 │ + → → → → → → message:·"Authentication·required",
+        102 │ + → → → → → },
+        103 │ + → → → → },
+        104 │ + → → → → 401,
+        105 │ + → → → );
+        106 │ + → → }
+    108 107 │   
+    109     │ - → → → //·1.·Extract·accountId·based·on·source·config
+    110     │ - → → → const·accountId·=·await·resolveAccountId(c,·source);
+    111     │ - → → → if·(!accountId)·{
+    112     │ - → → → → return·c.json(
+    113     │ - → → → → → {
+    114     │ - → → → → → → error:·{
+    115     │ - → → → → → → → code:·"BAD_REQUEST",
+    116     │ - → → → → → → → message:·"Account·ID·required",
+    117     │ - → → → → → → },
+    118     │ - → → → → → },
+    119     │ - → → → → → 400,
+    120     │ - → → → → );
+    121     │ - → → → }
+        108 │ + → → //·1.·Extract·accountId·based·on·source·config
+        109 │ + → → const·accountId·=·await·resolveAccountId(c,·source);
+        110 │ + → → if·(!accountId)·{
+        111 │ + → → → return·c.json(
+        112 │ + → → → → {
+        113 │ + → → → → → error:·{
+        114 │ + → → → → → → code:·"BAD_REQUEST",
+        115 │ + → → → → → → message:·"Account·ID·required",
+        116 │ + → → → → → },
+        117 │ + → → → → },
+        118 │ + → → → → 400,
+        119 │ + → → → );
+        120 │ + → → }
+    122 121 │   
+    123     │ - → → → //·2.·Determine·role:·owner·or·shared
+    124     │ - → → → const·role·=·await·resolveAccountRole(user.id,·accountId);
+    125     │ - → → → if·(!role)·{
+    126     │ - → → → → return·c.json(
+    127     │ - → → → → → {
+    128     │ - → → → → → → error:·{
+    129     │ - → → → → → → → code:·"FORBIDDEN",
+    130     │ - → → → → → → → message:·"No·access·to·this·account",
+    131     │ - → → → → → → },
+    132     │ - → → → → → },
+    133     │ - → → → → → 403,
+    134     │ - → → → → );
+    135     │ - → → → }
+        122 │ + → → //·2.·Determine·role:·owner·or·shared
+        123 │ + → → const·role·=·await·resolveAccountRole(user.id,·accountId);
+        124 │ + → → if·(!role)·{
+        125 │ + → → → return·c.json(
+        126 │ + → → → → {
+        127 │ + → → → → → error:·{
+        128 │ + → → → → → → code:·"FORBIDDEN",
+        129 │ + → → → → → → message:·"No·access·to·this·account",
+        130 │ + → → → → → },
+        131 │ + → → → → },
+        132 │ + → → → → 403,
+        133 │ + → → → );
+        134 │ + → → }
+    136 135 │   
+    137     │ - → → → //·3.·Check·permission
+    138     │ - → → → if·(!accountRoleHasPermission(role,·permission))·{
+    139     │ - → → → → return·c.json(
+    140     │ - → → → → → {
+    141     │ - → → → → → → error:·{
+    142     │ - → → → → → → → code:·"FORBIDDEN",
+    143     │ - → → → → → → → message:·"Insufficient·permissions",
+    144     │ - → → → → → → },
+    145     │ - → → → → → },
+    146     │ - → → → → → 403,
+    147     │ - → → → → );
+    148     │ - → → → }
+        136 │ + → → //·3.·Check·permission
+        137 │ + → → if·(!accountRoleHasPermission(role,·permission))·{
+        138 │ + → → → return·c.json(
+        139 │ + → → → → {
+        140 │ + → → → → → error:·{
+        141 │ + → → → → → → code:·"FORBIDDEN",
+        142 │ + → → → → → → message:·"Insufficient·permissions",
+        143 │ + → → → → → },
+        144 │ + → → → → },
+        145 │ + → → → → 403,
+        146 │ + → → → );
+        147 │ + → → }
+    149 148 │   
+    150     │ - → → → //·4.·Set·context·for·downstream·handlers
+    151     │ - → → → c.set("accountId",·accountId);
+    152     │ - → → → c.set("accountRole",·role);
+        149 │ + → → //·4.·Set·context·for·downstream·handlers
+        150 │ + → → c.set("accountId",·accountId);
+        151 │ + → → c.set("accountRole",·role);
+    153 152 │   
+    154     │ - → → → await·next();
+    155     │ - → → },
+    156     │ - → );
+        153 │ + → → await·next();
+        154 │ + → });
+    157 155 │   }
+    158 156 │   
+    ······· │ 
+    168 166 │    * the parent `account_id` column.
+    169 167 │    */
+    170     │ - async·function·resolveAccountId(
+    171     │ - → c:·Context,
+    172     │ - → source:·AccountIdSource,
+    173     │ - ):·Promise<string·|·null>·{
+        168 │ + async·function·resolveAccountId(c:·Context,·source:·AccountIdSource):·Promise<string·|·null>·{
+    174 169 │   	switch (source.from) {
+    175 170 │   		case "param":
+  
+
+Skipped 1 suggested fixes.
+If you wish to apply the suggested (unsafe) fixes, use the command biome check --fix --unsafe
+
+Checked 20 files in 27ms. No fixes applied.
+Found 6 errors.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
+error: script "lint" exited with code 1
