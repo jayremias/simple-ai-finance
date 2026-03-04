@@ -1,5 +1,5 @@
 export type {
+  AccountResponse,
   CreateAccountInput,
   UpdateAccountInput,
-  AccountResponse,
 } from './account';

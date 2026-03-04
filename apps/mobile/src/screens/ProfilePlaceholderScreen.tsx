@@ -1,8 +1,7 @@
-import { Colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors } from '@/theme/colors';
 
 export function ProfilePlaceholderScreen() {
   const insets = useSafeAreaInsets();

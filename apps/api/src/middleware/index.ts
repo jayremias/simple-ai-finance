@@ -1,8 +1,8 @@
-import { env } from '@/env';
 import type { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { requestId } from 'hono/request-id';
 import { secureHeaders } from 'hono/secure-headers';
+import { env } from '@/env';
 import type { AuthVariables } from './auth';
 import { sessionMiddleware } from './auth';
 import { logger } from './logger';

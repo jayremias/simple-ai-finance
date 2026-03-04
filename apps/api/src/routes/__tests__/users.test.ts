@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
 import { app } from '@/index';
-import { bearerHeader, createAuthenticatedUser, createTestUser } from '@/tests/helpers/auth';
+import { bearerHeader, createAuthenticatedUser } from '@/tests/helpers/auth';
 import { truncateAll } from '@/tests/helpers/db';
 
 // Clean state between tests

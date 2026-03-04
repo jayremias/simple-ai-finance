@@ -1,3 +1,10 @@
+import {
+  createAccountSchema,
+  listAccountsQuerySchema,
+  updateAccountSchema,
+} from '@moneylens/shared/schemas';
+import { and, eq } from 'drizzle-orm';
+import { Hono } from 'hono';
 import type { Session } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { member } from '@/lib/db/schema/organization';
@@ -11,13 +18,6 @@ import {
   resolveUserAccountRole,
   updateAccount,
 } from '@/services/accounts.service';
-import {
-  createAccountSchema,
-  listAccountsQuerySchema,
-  updateAccountSchema,
-} from '@moneylens/shared/schemas';
-import { and, eq } from 'drizzle-orm';
-import { Hono } from 'hono';
 
 const accounts = new Hono<{ Variables: AuthVariables }>().basePath('/accounts').use(requireAuth);
 

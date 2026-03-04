@@ -1,8 +1,8 @@
-import { Colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Colors } from '@/theme/colors';
 import { CategoryFilter } from '../components/analysis/CategoryFilter';
 import { PeriodToggle } from '../components/analysis/PeriodToggle';
 import { WeeklyBarChart } from '../components/charts/WeeklyBarChart';
@@ -18,7 +18,7 @@ export function WeeklyAnalysisScreen() {
   const [period, setPeriod] = useState<Period>('Week');
   const [chartData, setChartData] = useState(mockWeeklyData);
 
-  const handleBarPress = (item: WeeklyData, index: number) => {
+  const handleBarPress = (_item: WeeklyData, index: number) => {
     setChartData((prev) => prev.map((d, i) => ({ ...d, isActive: i === index })));
   };
 

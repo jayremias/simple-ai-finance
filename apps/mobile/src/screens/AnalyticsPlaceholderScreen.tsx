@@ -1,9 +1,8 @@
-import { Colors } from '@/theme/colors';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors } from '@/theme/colors';
 import type { RootStackParamList } from '../types';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;

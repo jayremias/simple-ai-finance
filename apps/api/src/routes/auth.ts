@@ -1,8 +1,8 @@
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { env } from '@/env';
 import { auth } from '@/lib/auth';
 import { authLimiter, sensitiveAuthLimiter } from '@/middleware/rate-limiter';
-import { Hono } from 'hono';
-import { cors } from 'hono/cors';
 
 const authRoutes = new Hono().basePath('/api/auth');
 

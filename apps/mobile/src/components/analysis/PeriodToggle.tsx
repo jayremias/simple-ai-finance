@@ -1,6 +1,5 @@
-import { Colors } from '@/theme/colors';
-import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Colors } from '@/theme/colors';
 
 type Period = 'Day' | 'Week' | 'Month';
 

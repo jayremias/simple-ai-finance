@@ -1,8 +1,8 @@
-import { requireAuth } from '@/middleware/auth';
-import type { AuthVariables } from '@/middleware/auth';
-import { getUserProfile, updateUserProfile } from '@/services/users.service';
 import { updateUserProfileSchema } from '@moneylens/shared';
 import { Hono } from 'hono';
+import type { AuthVariables } from '@/middleware/auth';
+import { requireAuth } from '@/middleware/auth';
+import { getUserProfile, updateUserProfile } from '@/services/users.service';
 
 const users = new Hono<{ Variables: AuthVariables }>();
 

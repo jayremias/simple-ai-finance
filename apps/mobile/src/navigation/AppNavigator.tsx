@@ -1,6 +1,5 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
 import { ReceiptDetailScreen } from '../screens/ReceiptDetailScreen';
 import { WeeklyAnalysisScreen } from '../screens/WeeklyAnalysisScreen';
 import type { RootStackParamList } from '../types';

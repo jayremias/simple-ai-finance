@@ -1,8 +1,8 @@
-import { Colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import type React from 'react';
-import { StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors } from '@/theme/colors';
 
 interface AppHeaderProps {
   title: string;

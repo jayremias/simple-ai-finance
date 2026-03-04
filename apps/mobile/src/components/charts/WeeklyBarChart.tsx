@@ -1,6 +1,5 @@
-import { Colors } from '@/theme/colors';
-import React from 'react';
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Colors } from '@/theme/colors';
 import type { WeeklyData } from '../../types';
 
 const { width } = Dimensions.get('window');

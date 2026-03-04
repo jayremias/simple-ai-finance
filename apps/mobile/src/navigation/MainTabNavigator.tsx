@@ -1,8 +1,7 @@
-import { Colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Colors } from '@/theme/colors';
 import { AnalyticsPlaceholderScreen } from '../screens/AnalyticsPlaceholderScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ProfilePlaceholderScreen } from '../screens/ProfilePlaceholderScreen';

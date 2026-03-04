@@ -1,10 +1,10 @@
+import type { CreateAccountInput, UpdateAccountInput } from '@moneylens/shared/types';
+import { and, eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { financialAccount } from '@/lib/db/schema/financial-account';
 import { member } from '@/lib/db/schema/organization';
 import { team, teamMember } from '@/lib/db/schema/team';
-import type { CreateAccountInput, UpdateAccountInput } from '@moneylens/shared/types';
-import { and, eq } from 'drizzle-orm';
 
 export async function createAccount(
   userId: string,

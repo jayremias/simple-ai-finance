@@ -1,8 +1,4 @@
-import { Colors } from '@/theme/colors';
-import React from 'react';
-import { Dimensions, Image, StyleSheet, View } from 'react-native';
-
-const { width } = Dimensions.get('window');
+import { Image, StyleSheet, View } from 'react-native';
 
 interface ReceiptPreviewProps {
   uri: string;

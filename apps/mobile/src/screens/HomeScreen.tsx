@@ -1,8 +1,7 @@
-import { Colors } from '@/theme/colors';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React from 'react';
-import { Alert, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { Colors } from '@/theme/colors';
 import { TransactionItem } from '../components/common/TransactionItem';
 import { BalanceCard } from '../components/home/BalanceCard';
 import { FeedAISection } from '../components/home/FeedAISection';

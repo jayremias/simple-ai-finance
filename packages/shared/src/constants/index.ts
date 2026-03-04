@@ -1,8 +1,8 @@
 export {
-  ACCOUNT_TYPES,
   ACCOUNT_STATUSES,
-  CURRENCIES,
-  type AccountType,
+  ACCOUNT_TYPES,
   type AccountStatus,
+  type AccountType,
+  CURRENCIES,
   type Currency,
 } from './account';

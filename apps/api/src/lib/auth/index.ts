@@ -1,11 +1,11 @@
-import { env as rootEnv } from '@/env';
-import { db } from '@/lib/db';
-import { member as memberTable } from '@/lib/db/schema/organization';
-import { sendEmail } from '@/lib/email';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { admin, organization } from 'better-auth/plugins';
 import { eq } from 'drizzle-orm';
+import { env as rootEnv } from '@/env';
+import { db } from '@/lib/db';
+import { member as memberTable } from '@/lib/db/schema/organization';
+import { sendEmail } from '@/lib/email';
 import { env } from './env';
 import { ac, editor, owner, viewer } from './permissions';
 

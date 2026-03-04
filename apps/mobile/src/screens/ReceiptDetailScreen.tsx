@@ -1,6 +1,4 @@
-import { Colors } from '@/theme/colors';
 import { type RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import React from 'react';
 import {
   Alert,
   ScrollView,
@@ -11,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors } from '@/theme/colors';
 import { AppHeader } from '../components/common/AppHeader';
 import { AIInsightCard } from '../components/receipt/AIInsightCard';
 import { ReceiptPreview } from '../components/receipt/ReceiptPreview';

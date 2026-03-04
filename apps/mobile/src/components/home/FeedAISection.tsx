@@ -1,7 +1,7 @@
-import { Colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import type React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Colors } from '@/theme/colors';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 

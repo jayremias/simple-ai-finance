@@ -1,20 +1,13 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "organizeImports": {
-    "enabled": true
-  },
-  "linter": {
+  "$schema": "https://biomejs.dev/schemas/2.4.5/schema.json",
+  "vcs": {
     "enabled": true,
-    "rules": {
-      "recommended": true,
-      "suspicious": {
-        "noExplicitAny": "error"
-      },
-      "style": {
-        "useConst": "error",
-        "noVar": "error"
-      }
-    }
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": false,
+    "includes": ["apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts", "packages/**/*.tsx"]
   },
   "formatter": {
     "enabled": true,
@@ -22,21 +15,48 @@
     "indentWidth": 2,
     "lineWidth": 100
   },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedImports": "warn",
+        "noUnusedVariables": "warn",
+        "useExhaustiveDependencies": "warn"
+      },
+      "suspicious": {
+        "noExplicitAny": "warn",
+        "noArrayIndexKey": "warn",
+        "noImplicitAnyLet": "warn"
+      },
+      "a11y": {
+        "useButtonType": "warn",
+        "noStaticElementInteractions": "off",
+        "useKeyWithClickEvents": "off",
+        "noLabelWithoutControl": "warn"
+      },
+      "style": {
+        "noNonNullAssertion": "warn"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn"
+      }
+    }
+  },
   "javascript": {
     "formatter": {
       "quoteStyle": "single",
-      "trailingCommas": "es5",
-      "semicolons": "always"
+      "jsxQuoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "es5"
     }
   },
-  "files": {
-    "ignore": [
-      "node_modules",
-      "dist",
-      ".expo",
-      "apps/mobile/node_modules",
-      "apps/api/node_modules",
-      "packages/shared/node_modules"
-    ]
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   }
 }

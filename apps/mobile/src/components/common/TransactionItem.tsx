@@ -1,6 +1,5 @@
-import { Colors } from '@/theme/colors';
-import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Colors } from '@/theme/colors';
 import type { Transaction } from '../../types';
 
 interface TransactionItemProps {

@@ -1,7 +1,7 @@
-import { env } from '@/env';
 import type { Context, ErrorHandler, NotFoundHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { ZodError } from 'zod';
+import { env } from '@/env';
 
 interface ErrorResponse {
   error: {
