@@ -1,5 +1,5 @@
-import { env } from '@/env';
 import type { MiddlewareHandler } from 'hono';
+import { env } from '@/env';
 
 const colors = {
   reset: '\x1b[0m',

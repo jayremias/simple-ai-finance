@@ -1,5 +1,5 @@
-import { db } from '@/lib/db';
 import { sql } from 'drizzle-orm';
+import { db } from '@/lib/db';
 
 /**
  * Truncates all application tables in the correct dependency order.

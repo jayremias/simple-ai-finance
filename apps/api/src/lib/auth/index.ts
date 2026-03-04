@@ -1,9 +1,9 @@
-import { env as rootEnv } from '@/env';
-import { db } from '@/lib/db';
-import { sendEmail } from '@/lib/email';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { admin, bearer, organization } from 'better-auth/plugins';
+import { env as rootEnv } from '@/env';
+import { db } from '@/lib/db';
+import { sendEmail } from '@/lib/email';
 import { env } from './env';
 
 function parseTrustedOrigins(raw: string): string[] {

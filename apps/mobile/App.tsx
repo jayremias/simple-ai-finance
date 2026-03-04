@@ -1,10 +1,9 @@
-import "react-native-gesture-handler";
-import React from "react";
-import { TamaguiProvider } from "tamagui";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { config } from "./tamagui.config";
-import { AppNavigator } from "./src/navigation/AppNavigator";
+import 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { TamaguiProvider } from 'tamagui';
+import { AppNavigator } from './src/navigation/AppNavigator';
+import { config } from './tamagui.config';
 
 export default function App() {
   return (

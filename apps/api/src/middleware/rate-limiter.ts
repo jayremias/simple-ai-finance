@@ -1,5 +1,5 @@
-import { rateLimiter } from 'hono-rate-limiter';
 import { createMiddleware } from 'hono/factory';
+import { rateLimiter } from 'hono-rate-limiter';
 
 type RateLimiterOptions = {
   windowMs?: number;

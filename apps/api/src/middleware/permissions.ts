@@ -1,15 +1,15 @@
+import type { Context } from 'hono';
+import { createMiddleware } from 'hono/factory';
 import type {
   AccountPermission,
   AccountRole,
   PlatformPermission,
 } from '@/lib/permissions/constants';
 import {
-  type PLATFORM_ROLES,
   accountRoleHasPermission,
+  type PLATFORM_ROLES,
   platformRoleHasPermission,
 } from '@/lib/permissions/constants';
-import type { Context } from 'hono';
-import { createMiddleware } from 'hono/factory';
 import type { AuthVariables } from './auth';
 
 // ---------------------------------------------------------------------------

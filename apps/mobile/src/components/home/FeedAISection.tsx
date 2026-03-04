@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import type React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '@/theme/colors';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -32,7 +32,12 @@ interface FeedAISectionProps {
   onManualEntry: () => void;
 }
 
-export function FeedAISection({ onScanReceipt, onUploadFile, onVoiceEntry, onManualEntry }: FeedAISectionProps) {
+export function FeedAISection({
+  onScanReceipt,
+  onUploadFile,
+  onVoiceEntry,
+  onManualEntry,
+}: FeedAISectionProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Feed your AI</Text>
