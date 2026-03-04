@@ -8,10 +8,11 @@ import health from '@/routes/health';
 import users from '@/routes/users';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import accounts from '@/routes/accounts';
+import authRoutes from '@/routes/auth';
 
 const app = new Hono();
 
-// Root-level error handlers (covers auth + v1 routes)
 app.onError(onError);
 app.notFound(notFound);
 
@@ -32,6 +33,7 @@ app.use('/api/auth/forget-password', sensitiveAuthLimiter);
 app.use('/api/auth/reset-password', sensitiveAuthLimiter);
 app.use('/api/auth/delete-user', sensitiveAuthLimiter);
 app.on(['POST', 'GET'], '/api/auth/**', (c) => auth.handler(c.req.raw));
+app.route('/', authRoutes);
 
 // --- Business routes (/api/v1/*) ---
 
@@ -39,6 +41,7 @@ const api = new Hono<{ Variables: AuthVariables }>().basePath('/api/v1');
 setupMiddleware(api);
 api.route('/', health);
 api.route('/users', users);
+api.route('/', accounts);
 
 app.route('/', api);
 

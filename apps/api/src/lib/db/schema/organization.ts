@@ -48,6 +48,9 @@ export const invitation = pgTable(
     inviterId: text('inviter_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
+    // No FK to team.id — would create circular import (team.ts → organization.ts → team.ts).
+    // Referential integrity enforced at application level by BA's invitation API.
+    teamId: text('team_id'),
   },
   (table) => [
     index('invitation_organizationId_idx').on(table.organizationId),

@@ -1,10 +1,13 @@
 import { env as rootEnv } from '@/env';
 import { db } from '@/lib/db';
+import { member as memberTable } from '@/lib/db/schema/organization';
 import { sendEmail } from '@/lib/email';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { admin, bearer, organization } from 'better-auth/plugins';
+import { admin, organization } from 'better-auth/plugins';
+import { eq } from 'drizzle-orm';
 import { env } from './env';
+import { ac, editor, owner, viewer } from './permissions';
 
 function parseTrustedOrigins(raw: string): string[] {
   if (raw === '*') return [];
@@ -92,14 +95,59 @@ export const auth = betterAuth({
     },
   },
 
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          await auth.api.createOrganization({
+            body: {
+              name: 'Personal',
+              slug: `personal-${user.id}`,
+              userId: user.id,
+            },
+          });
+        },
+      },
+    },
+    session: {
+      create: {
+        before: async (session) => {
+          if (session.activeOrganizationId) return { data: session };
+
+          try {
+            const [personalMember] = await db
+              .select()
+              .from(memberTable)
+              .where(eq(memberTable.userId, session.userId))
+              .limit(1);
+
+            return {
+              data: {
+                ...session,
+                activeOrganizationId: personalMember?.organizationId ?? null,
+              },
+            };
+          } catch (error) {
+            console.error('Failed to resolve activeOrganizationId for session:', error);
+            return { data: { ...session, activeOrganizationId: null } };
+          }
+        },
+      },
+    },
+  },
+
   plugins: [
-    bearer(),
     admin({
       defaultRole: 'user',
     }),
     organization({
+      ac,
+      roles: { owner, editor, viewer },
       allowUserToCreateOrganization: true,
       creatorRole: 'owner',
+      teams: {
+        enabled: true,
+      },
     }),
   ],
 });

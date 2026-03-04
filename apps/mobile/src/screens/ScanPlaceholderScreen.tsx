@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/theme/colors';
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function ScanPlaceholderScreen() {
@@ -10,7 +10,9 @@ export function ScanPlaceholderScreen() {
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <Ionicons name="camera-outline" size={64} color={Colors.textSecondary} />
       <Text style={styles.title}>Scan Receipt</Text>
-      <Text style={styles.subtitle}>Point your camera at a receipt to scan and categorize it automatically</Text>
+      <Text style={styles.subtitle}>
+        Point your camera at a receipt to scan and categorize it automatically
+      </Text>
       <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>Open Camera</Text>
       </TouchableOpacity>

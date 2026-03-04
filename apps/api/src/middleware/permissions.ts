@@ -1,13 +1,6 @@
-import type {
-  AccountPermission,
-  AccountRole,
-  PlatformPermission,
-} from '@/lib/permissions/constants';
-import {
-  type PLATFORM_ROLES,
-  accountRoleHasPermission,
-  platformRoleHasPermission,
-} from '@/lib/permissions/constants';
+import type { PlatformPermission } from '@/lib/permissions/constants';
+import { type PLATFORM_ROLES, platformRoleHasPermission } from '@/lib/permissions/constants';
+import { resolveUserAccountRole } from '@/services/accounts.service';
 import type { Context } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import type { AuthVariables } from './auth';
@@ -57,8 +50,10 @@ export function requirePlatformPermission(permission: PlatformPermission) {
 }
 
 // ---------------------------------------------------------------------------
-// Account permission middleware (stubbed — requires financial_account table)
+// Account permission middleware
 // ---------------------------------------------------------------------------
+
+export type AccountRole = 'owner' | 'editor' | 'viewer';
 
 /**
  * Describes where to extract the target `accountId` from the request.
@@ -78,16 +73,12 @@ export type AccountPermissionVariables = AuthVariables & {
 };
 
 /**
- * Checks that the authenticated user has the given permission on the target
- * financial account. Sets `c.var.accountId` and `c.var.accountRole` for
- * downstream handlers.
- *
- * **Stubbed** — `resolveAccountId` and `resolveAccountRole` throw until the
- * `financial_account` and `account_share` tables are created.
- * See `docs/plans/2026-03-02-permissions-design.md` §5–6 for the full flow.
+ * Checks that the authenticated user has access to the target financial
+ * account via team or org membership. Sets `c.var.accountId` and
+ * `c.var.accountRole` for downstream handlers.
  */
-export function requireAccountPermission(
-  permission: AccountPermission,
+export function requireAccountAccess(
+  minimumRole: AccountRole = 'viewer',
   source: AccountIdSource = { from: 'param', name: 'id' }
 ) {
   return createMiddleware<{ Variables: AccountPermissionVariables }>(async (c, next) => {
@@ -104,7 +95,6 @@ export function requireAccountPermission(
       );
     }
 
-    // 1. Extract accountId based on source config
     const accountId = await resolveAccountId(c, source);
     if (!accountId) {
       return c.json(
@@ -118,8 +108,7 @@ export function requireAccountPermission(
       );
     }
 
-    // 2. Determine role: owner or shared
-    const role = await resolveAccountRole(user.id, accountId);
+    const role = await resolveUserAccountRole(user.id, accountId);
     if (!role) {
       return c.json(
         {
@@ -132,8 +121,9 @@ export function requireAccountPermission(
       );
     }
 
-    // 3. Check permission
-    if (!accountRoleHasPermission(role, permission)) {
+    // Check minimum role level
+    const roleLevel = { owner: 3, editor: 2, viewer: 1 } as const;
+    if (roleLevel[role] < roleLevel[minimumRole]) {
       return c.json(
         {
           error: {
@@ -145,7 +135,6 @@ export function requireAccountPermission(
       );
     }
 
-    // 4. Set context for downstream handlers
     c.set('accountId', accountId);
     c.set('accountRole', role);
 
@@ -154,16 +143,9 @@ export function requireAccountPermission(
 }
 
 // ---------------------------------------------------------------------------
-// Helpers — stubbed until financial_account / account_share tables exist
+// Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Extracts the target `accountId` from the request based on the source config.
- *
- * TODO: Implement `lookup` case when transaction/statement tables exist.
- * The lookup case will query the child table by its `:id` param and return
- * the parent `account_id` column.
- */
 async function resolveAccountId(c: Context, source: AccountIdSource): Promise<string | null> {
   switch (source.from) {
     case 'param':
@@ -175,53 +157,7 @@ async function resolveAccountId(c: Context, source: AccountIdSource): Promise<st
     }
 
     case 'lookup':
-      // TODO: Query `source.table` by `:id` param to get `account_id`.
-      // Example for transactions:
-      //   const tx = await db.query.transaction.findFirst({
-      //     where: (t, { eq }) => eq(t.id, c.req.param("id")),
-      //     columns: { accountId: true },
-      //   });
-      //   return tx?.accountId ?? null;
-      throw new Error(
-        `Account ID lookup from "${source.table}" table is not yet implemented. Requires financial_account and related tables.`
-      );
+      // TODO: Implement when transaction/statement tables exist.
+      throw new Error(`Account ID lookup from "${source.table}" table is not yet implemented.`);
   }
-}
-
-/**
- * Determines the user's role on the given financial account.
- * Returns `"owner"` if the user created the account, the shared role
- * (`"editor"` | `"viewer"`) if an `account_share` row exists, or `null`.
- *
- * TODO: Implement when `financial_account` and `account_share` schemas exist.
- * See `docs/plans/2026-03-02-permissions-design.md` §5.2 for the full flow.
- */
-async function resolveAccountRole(
-  _userId: string,
-  _accountId: string
-): Promise<AccountRole | null> {
-  // TODO: Implement ownership + sharing lookup:
-  //
-  // 1. Check ownership (most common path):
-  //   const account = await db.query.financialAccount.findFirst({
-  //     where: (t, { eq, and }) => and(eq(t.id, accountId), eq(t.userId, userId)),
-  //     columns: { id: true },
-  //   });
-  //   if (account) return "owner";
-  //
-  // 2. Check shared access:
-  //   const share = await db.query.accountShare.findFirst({
-  //     where: (t, { eq, and }) =>
-  //       and(eq(t.accountId, accountId), eq(t.userId, userId)),
-  //     columns: { role: true },
-  //   });
-  //   if (share) return share.role as AccountRole;
-  //
-  // 3. No access:
-  //   return null;
-
-  throw new Error(
-    'Account role resolution is not yet implemented. ' +
-      'Requires financial_account and account_share tables.'
-  );
 }
