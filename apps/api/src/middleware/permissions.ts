@@ -1,16 +1,9 @@
-import type {
-	AccountPermission,
-	AccountRole,
-	PlatformPermission,
-} from "@/lib/permissions/constants";
-import {
-	type PLATFORM_ROLES,
-	accountRoleHasPermission,
-	platformRoleHasPermission,
-} from "@/lib/permissions/constants";
-import type { Context } from "hono";
-import { createMiddleware } from "hono/factory";
-import type { AuthVariables } from "./auth";
+import type { PlatformPermission } from '@/lib/permissions/constants';
+import { type PLATFORM_ROLES, platformRoleHasPermission } from '@/lib/permissions/constants';
+import { resolveUserAccountRole } from '@/services/accounts.service';
+import type { Context } from 'hono';
+import { createMiddleware } from 'hono/factory';
+import type { AuthVariables } from './auth';
 
 // ---------------------------------------------------------------------------
 // Platform permission middleware
@@ -24,41 +17,43 @@ import type { AuthVariables } from "./auth";
  * Must be used after `sessionMiddleware` + `requireAuth`.
  */
 export function requirePlatformPermission(permission: PlatformPermission) {
-	return createMiddleware<{ Variables: AuthVariables }>(async (c, next) => {
-		const user = c.get("user");
-		if (!user) {
-			return c.json(
-				{
-					error: {
-						code: "UNAUTHORIZED",
-						message: "Authentication required",
-					},
-				},
-				401,
-			);
-		}
+  return createMiddleware<{ Variables: AuthVariables }>(async (c, next) => {
+    const user = c.get('user');
+    if (!user) {
+      return c.json(
+        {
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+        },
+        401
+      );
+    }
 
-		const role = (user.role ?? "user") as keyof typeof PLATFORM_ROLES;
+    const role = (user.role ?? 'user') as keyof typeof PLATFORM_ROLES;
 
-		if (!platformRoleHasPermission(role, permission)) {
-			return c.json(
-				{
-					error: {
-						code: "FORBIDDEN",
-						message: "Insufficient permissions",
-					},
-				},
-				403,
-			);
-		}
+    if (!platformRoleHasPermission(role, permission)) {
+      return c.json(
+        {
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Insufficient permissions',
+          },
+        },
+        403
+      );
+    }
 
-		await next();
-	});
+    await next();
+  });
 }
 
 // ---------------------------------------------------------------------------
-// Account permission middleware (stubbed — requires financial_account table)
+// Account permission middleware
 // ---------------------------------------------------------------------------
+
+export type AccountRole = 'owner' | 'editor' | 'viewer';
 
 /**
  * Describes where to extract the target `accountId` from the request.
@@ -68,160 +63,101 @@ export function requirePlatformPermission(permission: PlatformPermission) {
  * - `lookup` — DB lookup via a child table's `:id` param (e.g. transaction → account_id)
  */
 export type AccountIdSource =
-	| { from: "param"; name?: string }
-	| { from: "body"; name?: string }
-	| { from: "lookup"; table: "transaction" | "statement" };
+  | { from: 'param'; name?: string }
+  | { from: 'body'; name?: string }
+  | { from: 'lookup'; table: 'transaction' | 'statement' };
 
 export type AccountPermissionVariables = AuthVariables & {
-	accountId: string;
-	accountRole: AccountRole;
+  accountId: string;
+  accountRole: AccountRole;
 };
 
 /**
- * Checks that the authenticated user has the given permission on the target
- * financial account. Sets `c.var.accountId` and `c.var.accountRole` for
- * downstream handlers.
- *
- * **Stubbed** — `resolveAccountId` and `resolveAccountRole` throw until the
- * `financial_account` and `account_share` tables are created.
- * See `docs/plans/2026-03-02-permissions-design.md` §5–6 for the full flow.
+ * Checks that the authenticated user has access to the target financial
+ * account via team or org membership. Sets `c.var.accountId` and
+ * `c.var.accountRole` for downstream handlers.
  */
-export function requireAccountPermission(
-	permission: AccountPermission,
-	source: AccountIdSource = { from: "param", name: "id" },
+export function requireAccountAccess(
+  minimumRole: AccountRole = 'viewer',
+  source: AccountIdSource = { from: 'param', name: 'id' }
 ) {
-	return createMiddleware<{ Variables: AccountPermissionVariables }>(async (c, next) => {
-		const user = c.get("user");
-		if (!user) {
-			return c.json(
-				{
-					error: {
-						code: "UNAUTHORIZED",
-						message: "Authentication required",
-					},
-				},
-				401,
-			);
-		}
+  return createMiddleware<{ Variables: AccountPermissionVariables }>(async (c, next) => {
+    const user = c.get('user');
+    if (!user) {
+      return c.json(
+        {
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+        },
+        401
+      );
+    }
 
-		// 1. Extract accountId based on source config
-		const accountId = await resolveAccountId(c, source);
-		if (!accountId) {
-			return c.json(
-				{
-					error: {
-						code: "BAD_REQUEST",
-						message: "Account ID required",
-					},
-				},
-				400,
-			);
-		}
+    const accountId = await resolveAccountId(c, source);
+    if (!accountId) {
+      return c.json(
+        {
+          error: {
+            code: 'BAD_REQUEST',
+            message: 'Account ID required',
+          },
+        },
+        400
+      );
+    }
 
-		// 2. Determine role: owner or shared
-		const role = await resolveAccountRole(user.id, accountId);
-		if (!role) {
-			return c.json(
-				{
-					error: {
-						code: "FORBIDDEN",
-						message: "No access to this account",
-					},
-				},
-				403,
-			);
-		}
+    const role = await resolveUserAccountRole(user.id, accountId);
+    if (!role) {
+      return c.json(
+        {
+          error: {
+            code: 'FORBIDDEN',
+            message: 'No access to this account',
+          },
+        },
+        403
+      );
+    }
 
-		// 3. Check permission
-		if (!accountRoleHasPermission(role, permission)) {
-			return c.json(
-				{
-					error: {
-						code: "FORBIDDEN",
-						message: "Insufficient permissions",
-					},
-				},
-				403,
-			);
-		}
+    // Check minimum role level
+    const roleLevel = { owner: 3, editor: 2, viewer: 1 } as const;
+    if (roleLevel[role] < roleLevel[minimumRole]) {
+      return c.json(
+        {
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Insufficient permissions',
+          },
+        },
+        403
+      );
+    }
 
-		// 4. Set context for downstream handlers
-		c.set("accountId", accountId);
-		c.set("accountRole", role);
+    c.set('accountId', accountId);
+    c.set('accountRole', role);
 
-		await next();
-	});
+    await next();
+  });
 }
 
 // ---------------------------------------------------------------------------
-// Helpers — stubbed until financial_account / account_share tables exist
+// Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Extracts the target `accountId` from the request based on the source config.
- *
- * TODO: Implement `lookup` case when transaction/statement tables exist.
- * The lookup case will query the child table by its `:id` param and return
- * the parent `account_id` column.
- */
 async function resolveAccountId(c: Context, source: AccountIdSource): Promise<string | null> {
-	switch (source.from) {
-		case "param":
-			return c.req.param(source.name ?? "id") ?? null;
+  switch (source.from) {
+    case 'param':
+      return c.req.param(source.name ?? 'id') ?? null;
 
-		case "body": {
-			const body = await c.req.json();
-			return body[source.name ?? "accountId"] ?? null;
-		}
+    case 'body': {
+      const body = await c.req.json();
+      return body[source.name ?? 'accountId'] ?? null;
+    }
 
-		case "lookup":
-			// TODO: Query `source.table` by `:id` param to get `account_id`.
-			// Example for transactions:
-			//   const tx = await db.query.transaction.findFirst({
-			//     where: (t, { eq }) => eq(t.id, c.req.param("id")),
-			//     columns: { accountId: true },
-			//   });
-			//   return tx?.accountId ?? null;
-			throw new Error(
-				`Account ID lookup from "${source.table}" table is not yet implemented. Requires financial_account and related tables.`,
-			);
-	}
-}
-
-/**
- * Determines the user's role on the given financial account.
- * Returns `"owner"` if the user created the account, the shared role
- * (`"editor"` | `"viewer"`) if an `account_share` row exists, or `null`.
- *
- * TODO: Implement when `financial_account` and `account_share` schemas exist.
- * See `docs/plans/2026-03-02-permissions-design.md` §5.2 for the full flow.
- */
-async function resolveAccountRole(
-	_userId: string,
-	_accountId: string,
-): Promise<AccountRole | null> {
-	// TODO: Implement ownership + sharing lookup:
-	//
-	// 1. Check ownership (most common path):
-	//   const account = await db.query.financialAccount.findFirst({
-	//     where: (t, { eq, and }) => and(eq(t.id, accountId), eq(t.userId, userId)),
-	//     columns: { id: true },
-	//   });
-	//   if (account) return "owner";
-	//
-	// 2. Check shared access:
-	//   const share = await db.query.accountShare.findFirst({
-	//     where: (t, { eq, and }) =>
-	//       and(eq(t.accountId, accountId), eq(t.userId, userId)),
-	//     columns: { role: true },
-	//   });
-	//   if (share) return share.role as AccountRole;
-	//
-	// 3. No access:
-	//   return null;
-
-	throw new Error(
-		"Account role resolution is not yet implemented. " +
-			"Requires financial_account and account_share tables.",
-	);
+    case 'lookup':
+      // TODO: Implement when transaction/statement tables exist.
+      throw new Error(`Account ID lookup from "${source.table}" table is not yet implemented.`);
+  }
 }

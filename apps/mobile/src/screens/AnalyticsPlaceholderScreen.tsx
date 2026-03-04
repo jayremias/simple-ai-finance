@@ -1,10 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types';
 import { Colors } from '@/theme/colors';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { RootStackParamList } from '../types';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -15,10 +15,7 @@ export function AnalyticsPlaceholderScreen() {
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <Text style={styles.title}>Analytics</Text>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('WeeklyAnalysis')}
-      >
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('WeeklyAnalysis')}>
         <Text style={styles.buttonText}>View Weekly Analysis</Text>
       </TouchableOpacity>
     </View>

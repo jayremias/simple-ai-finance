@@ -1,21 +1,14 @@
-import React from 'react';
-import {
-  View,
-  ScrollView,
-  Text,
-  StyleSheet,
-  StatusBar,
-  Alert,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors } from '@/theme/colors';
-import { mockBalance, mockTransactions } from '../utils/mockData';
-import { RootStackParamList } from '../types';
-import { HomeHeader } from '../components/home/HomeHeader';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React from 'react';
+import { Alert, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { TransactionItem } from '../components/common/TransactionItem';
 import { BalanceCard } from '../components/home/BalanceCard';
 import { FeedAISection } from '../components/home/FeedAISection';
-import { TransactionItem } from '../components/common/TransactionItem';
+import { HomeHeader } from '../components/home/HomeHeader';
+import type { RootStackParamList } from '../types';
+import { mockBalance, mockTransactions } from '../utils/mockData';
 
 type HomeNavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -26,7 +19,8 @@ export function HomeScreen() {
     // Navigate to receipt detail with mock data to demo the flow
     navigation.navigate('ReceiptDetail', {
       receipt: {
-        imageUri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Grocery_store_receipt.jpg/800px-Grocery_store_receipt.jpg',
+        imageUri:
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Grocery_store_receipt.jpg/800px-Grocery_store_receipt.jpg',
         category: 'Groceries',
         amount: 45.89,
         date: 'June 18, 2024',

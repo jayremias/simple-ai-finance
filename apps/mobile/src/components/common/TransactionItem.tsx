@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Transaction } from '../../types';
 import { Colors } from '@/theme/colors';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import type { Transaction } from '../../types';
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -24,7 +24,9 @@ export function TransactionItem({ transaction, showPaymentMethod = false }: Tran
 
   return (
     <View style={styles.container}>
-      <View style={[styles.iconContainer, { backgroundColor: transaction.iconBg || icon.color + '33' }]}>
+      <View
+        style={[styles.iconContainer, { backgroundColor: transaction.iconBg || `${icon.color}33` }]}
+      >
         <Text style={[styles.iconText, { color: icon.color }]}>{icon.symbol}</Text>
       </View>
       <View style={styles.info}>

@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Image, StyleSheet, Dimensions } from 'react-native';
 import { Colors } from '@/theme/colors';
+import React from 'react';
+import { Dimensions, Image, StyleSheet, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -11,11 +11,7 @@ interface ReceiptPreviewProps {
 export function ReceiptPreview({ uri }: ReceiptPreviewProps) {
   return (
     <View style={styles.container}>
-      <Image
-        source={{ uri }}
-        style={styles.image}
-        resizeMode="cover"
-      />
+      <Image source={{ uri }} style={styles.image} resizeMode="cover" />
     </View>
   );
 }

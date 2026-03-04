@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
-import { WeeklyData } from '../../types';
 import { Colors } from '@/theme/colors';
+import React from 'react';
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import type { WeeklyData } from '../../types';
 
 const { width } = Dimensions.get('window');
 const CHART_HEIGHT = 180;
@@ -50,7 +50,9 @@ export function WeeklyBarChart({ data, onBarPress }: WeeklyBarChartProps) {
                     styles.bar,
                     {
                       height: barHeight,
-                      backgroundColor: item.isActive ? Colors.chartBarActive : Colors.chartBarInactive,
+                      backgroundColor: item.isActive
+                        ? Colors.chartBarActive
+                        : Colors.chartBarInactive,
                       opacity: item.isActive ? 1 : 0.7,
                     },
                   ]}
