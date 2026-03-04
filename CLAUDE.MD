@@ -239,6 +239,67 @@ Available MCP integrations:
 
 When implementing features, use **Context7** to look up the latest API patterns for Hono, Drizzle, React Native, Tamagui, and other dependencies before writing code.
 
+## Backend TDD Workflow
+
+All backend features are built in this strict order: **test → service → route**.
+
+### What to test at each level
+
+Choose the test level based on what is actually being validated:
+
+| Feature type | Test level | Rationale |
+|---|---|---|
+| Simple CRUD (accounts, categories, tags) | Route tests only | Routes are thin — HTTP contract + auth + validation covers everything meaningful |
+| Complex business logic (budget rollover, recurring payment generation, balance calculations) | Service tests | Logic should be tested in isolation, not buried inside an HTTP test |
+| Pure utilities / calculations | Unit tests | No DB or HTTP needed |
+
+Route tests are integration tests — they exercise the service and DB through the HTTP layer. For simple CRUD, this is sufficient. Only add dedicated service tests when the service contains logic worth testing independently.
+
+### Order of Implementation
+
+1. **Write the test first**
+   - Simple CRUD → `apps/api/src/routes/__tests__/<feature>.test.ts` (HTTP-level, uses `app.request()`)
+   - Complex logic → `apps/api/src/services/__tests__/<feature>.service.test.ts` (calls service directly)
+   - Tests must fail initially (red phase)
+
+2. **Write the service** — `apps/api/src/services/<feature>.service.ts`
+   - Pure business logic, zero HTTP concerns
+   - Accepts typed inputs, returns typed outputs
+   - Throws domain errors (not HTTP errors)
+
+3. **Write the route** — `apps/api/src/routes/<feature>.ts`
+   - Thin handler: validate input → call service → serialize response
+   - No business logic in routes
+
+4. **Run tests** — All tests must pass (`bun test`) before moving to the next feature
+
+### Route test coverage (when used)
+
+Cover: happy path, 401 unauthenticated, 403 forbidden, 400 validation errors, 404 not found.
+
+### Test Setup
+
+- **Runner**: Bun (`bun test` in `apps/api/`)
+- **Database**: Real PostgreSQL test DB — `apps/api/.env.test` loaded automatically when `NODE_ENV=test`
+- **Lifecycle**: Tables truncated in `beforeEach` via `truncateAll()` helper
+- **HTTP testing**: Hono's `app.request()` — no real server needed
+- **Auth**: Test helpers create users + sessions directly in DB (bypass Better Auth for test setup)
+- **Helpers**: `apps/api/src/tests/helpers/` — `db.ts` (truncateAll), `auth.ts` (createAuthenticatedUser, bearerHeader)
+
+### File Naming Conventions
+
+```
+src/
+  routes/
+    <feature>.ts                          # Route handler
+    __tests__/
+      <feature>.test.ts                   # HTTP-level tests (simple CRUD)
+  services/
+    <feature>.service.ts                  # Business logic
+    __tests__/
+      <feature>.service.test.ts           # Service-level tests (complex logic only)
+```
+
 ## Git Conventions
 
 - Branch naming: `feature/`, `fix/`, `chore/` prefixes
