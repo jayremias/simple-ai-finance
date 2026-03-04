@@ -1,11 +1,13 @@
 {
   "name": "moneylens",
   "version": "1.0.0",
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.5",
+    "turbo": "^2.5.4",
+    "typescript": "~5.9.2"
+  },
+  "packageManager": "bun@1.3.1",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
@@ -16,10 +18,8 @@
     "mobile:ios": "bun --cwd apps/mobile run ios",
     "mobile:android": "bun --cwd apps/mobile run android"
   },
-  "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "turbo": "^2.5.4",
-    "typescript": "~5.9.2"
-  },
-  "packageManager": "bun@1.3.1"
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
 }

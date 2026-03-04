@@ -1,26 +1,26 @@
-import { defaultConfig, shorthands, themes, tokens } from "@tamagui/config/v5";
-import { createTamagui, createTokens } from "tamagui";
-import { createInterFont } from "@tamagui/font-inter";
-import { createAnimations } from "@tamagui/animations-react-native";
+import { createAnimations } from '@tamagui/animations-react-native';
+import { defaultConfig, shorthands, themes, tokens } from '@tamagui/config/v5';
+import { createInterFont } from '@tamagui/font-inter';
+import { createTamagui, createTokens } from 'tamagui';
 
 const customTokens = createTokens({
   ...tokens,
   color: {
     // Finance app brand colors
-    brandBlue: "#2B7EFF",
-    brandPurple: "#7B2FBE",
-    brandTeal: "#00C896",
-    cardBg: "#1A2235",
-    darkBg: "#0D1117",
-    navyBg: "#111827",
-    surfaceBg: "#1E293B",
-    textPrimary: "#FFFFFF",
-    textSecondary: "#94A3B8",
-    textMuted: "#64748B",
-    success: "#22C55E",
-    danger: "#EF4444",
-    chartBlue: "#4FC3F7",
-    chartPurple: "#7C3AED",
+    brandBlue: '#2B7EFF',
+    brandPurple: '#7B2FBE',
+    brandTeal: '#00C896',
+    cardBg: '#1A2235',
+    darkBg: '#0D1117',
+    navyBg: '#111827',
+    surfaceBg: '#1E293B',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#94A3B8',
+    textMuted: '#64748B',
+    success: '#22C55E',
+    danger: '#EF4444',
+    chartBlue: '#4FC3F7',
+    chartPurple: '#7C3AED',
   },
 });
 
@@ -45,25 +45,25 @@ const headingFont = createInterFont({
     16: 134,
   },
   weight: {
-    1: "300",
-    true: "400",
-    3: "600",
-    4: "700",
-    5: "900",
+    1: '300',
+    true: '400',
+    3: '600',
+    4: '700',
+    5: '900',
   },
 });
 
 const bodyFont = createInterFont(
   {
     weight: {
-      1: "300",
-      true: "400",
+      1: '300',
+      true: '400',
     },
   },
   {
     sizeSize: (size) => Math.round(size * 1),
     sizeLineHeight: (size) => Math.round(size * 1.1 + 8),
-  },
+  }
 );
 
 const animations = createAnimations({
@@ -87,7 +87,7 @@ const animations = createAnimations({
 export const config = createTamagui({
   ...defaultConfig,
   animations,
-  defaultTheme: "dark",
+  defaultTheme: 'dark',
   shouldAddPrefersColorThemes: true,
   themeClassNameOnRoot: true,
   shorthands,
@@ -112,13 +112,13 @@ export const config = createTamagui({
     gtLg: { minWidth: 1280 + 1 },
     short: { maxHeight: 820 },
     tall: { minHeight: 820 },
-    hoverNone: { hover: "none" },
-    pointerCoarse: { pointer: "coarse" },
+    hoverNone: { hover: 'none' },
+    pointerCoarse: { pointer: 'coarse' },
   },
 });
 
 type OurConfig = typeof config;
 
-declare module "tamagui" {
+declare module 'tamagui' {
   interface TamaguiCustomConfig extends OurConfig {}
 }

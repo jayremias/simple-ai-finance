@@ -1,6 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { Colors } from '@/theme/colors';
 
 const { width } = Dimensions.get('window');
@@ -46,7 +45,9 @@ export function BalanceCard({ balance }: BalanceCardProps) {
   return (
     <View style={styles.card}>
       <Text style={styles.label}>Total Balance</Text>
-      <Text style={styles.balance}>${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
+      <Text style={styles.balance}>
+        ${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+      </Text>
       <View style={styles.chartContainer}>
         <Svg width={CARD_WIDTH} height={CHART_HEIGHT} style={styles.chart}>
           <Defs>
@@ -56,7 +57,14 @@ export function BalanceCard({ balance }: BalanceCardProps) {
             </LinearGradient>
           </Defs>
           <Path d={areaPath} fill="url(#areaGrad)" />
-          <Path d={linePath} fill="none" stroke="#4FC3F7" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+          <Path
+            d={linePath}
+            fill="none"
+            stroke="#4FC3F7"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </Svg>
       </View>
     </View>

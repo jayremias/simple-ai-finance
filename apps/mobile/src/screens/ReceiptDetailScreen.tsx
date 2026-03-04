@@ -1,20 +1,19 @@
-import React from 'react';
+import { type RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   Alert,
+  ScrollView,
   StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/theme/colors';
-import { RootStackParamList } from '../types';
 import { AppHeader } from '../components/common/AppHeader';
 import { AIInsightCard } from '../components/receipt/AIInsightCard';
 import { ReceiptPreview } from '../components/receipt/ReceiptPreview';
+import type { RootStackParamList } from '../types';
 
 type ReceiptDetailRoute = RouteProp<RootStackParamList, 'ReceiptDetail'>;
 

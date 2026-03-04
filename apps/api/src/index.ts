@@ -1,3 +1,5 @@
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { env } from '@/env';
 import { auth } from '@/lib/auth';
 import { setupMiddleware } from '@/middleware';
@@ -6,8 +8,6 @@ import { notFound, onError } from '@/middleware/error-handler';
 import { authLimiter, sensitiveAuthLimiter } from '@/middleware/rate-limiter';
 import health from '@/routes/health';
 import users from '@/routes/users';
-import { Hono } from 'hono';
-import { cors } from 'hono/cors';
 
 const app = new Hono();
 

@@ -1,5 +1,5 @@
-import { type Session, auth } from '@/lib/auth';
 import { createMiddleware } from 'hono/factory';
+import { auth, type Session } from '@/lib/auth';
 
 export type AuthVariables = {
   user: Session['user'] | null;

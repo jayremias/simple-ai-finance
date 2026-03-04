@@ -1,7 +1,7 @@
-import { db } from '@/lib/db';
-import { user, userProfile } from '@/lib/db/schema';
 import type { UpdateUserProfileInput, UserProfileResponse } from '@moneylens/shared';
 import { eq } from 'drizzle-orm';
+import { db } from '@/lib/db';
+import { user, userProfile } from '@/lib/db/schema';
 
 /**
  * Returns the user's profile merged with their auth user record.

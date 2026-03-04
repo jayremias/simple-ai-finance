@@ -1,7 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
-import { WeeklyData } from '../../types';
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '@/theme/colors';
+import type { WeeklyData } from '../../types';
 
 const { width } = Dimensions.get('window');
 const CHART_HEIGHT = 180;
@@ -21,7 +20,7 @@ export function WeeklyBarChart({ data, onBarPress }: WeeklyBarChartProps) {
       {data.map((item, index) =>
         item.isActive ? (
           <View
-            key={`tooltip-${index}`}
+            key={`tooltip-${item.day}-${item.amount}-${item.isActive ? 'active' : 'inactive'}`}
             style={[
               styles.tooltip,
               {
@@ -39,7 +38,7 @@ export function WeeklyBarChart({ data, onBarPress }: WeeklyBarChartProps) {
           const barHeight = (item.amount / maxAmount) * CHART_HEIGHT;
           return (
             <TouchableOpacity
-              key={index}
+              key={`bar-${item.day}-${item.amount}-${item.isActive ? 'active' : 'inactive'}`}
               style={styles.barWrapper}
               onPress={() => onBarPress?.(item, index)}
               activeOpacity={0.8}
@@ -50,7 +49,9 @@ export function WeeklyBarChart({ data, onBarPress }: WeeklyBarChartProps) {
                     styles.bar,
                     {
                       height: barHeight,
-                      backgroundColor: item.isActive ? Colors.chartBarActive : Colors.chartBarInactive,
+                      backgroundColor: item.isActive
+                        ? Colors.chartBarActive
+                        : Colors.chartBarInactive,
                       opacity: item.isActive ? 1 : 0.7,
                     },
                   ]}

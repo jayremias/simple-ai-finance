@@ -1,10 +1,9 @@
-import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types';
-import { MainTabNavigator } from './MainTabNavigator';
 import { ReceiptDetailScreen } from '../screens/ReceiptDetailScreen';
 import { WeeklyAnalysisScreen } from '../screens/WeeklyAnalysisScreen';
+import type { RootStackParamList } from '../types';
+import { MainTabNavigator } from './MainTabNavigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

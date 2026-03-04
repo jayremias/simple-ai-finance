@@ -1,22 +1,15 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  StatusBar,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useState } from 'react';
+import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '@/theme/colors';
-import { mockWeeklyData, mockTransactions } from '../utils/mockData';
-import { WeeklyData } from '../types';
-import { AppHeader } from '../components/common/AppHeader';
-import { WeeklyBarChart } from '../components/charts/WeeklyBarChart';
-import { TransactionItem } from '../components/common/TransactionItem';
-import { PeriodToggle } from '../components/analysis/PeriodToggle';
 import { CategoryFilter } from '../components/analysis/CategoryFilter';
+import { PeriodToggle } from '../components/analysis/PeriodToggle';
+import { WeeklyBarChart } from '../components/charts/WeeklyBarChart';
+import { AppHeader } from '../components/common/AppHeader';
+import { TransactionItem } from '../components/common/TransactionItem';
+import type { WeeklyData } from '../types';
+import { mockTransactions, mockWeeklyData } from '../utils/mockData';
 
 type Period = 'Day' | 'Week' | 'Month';
 
@@ -25,10 +18,8 @@ export function WeeklyAnalysisScreen() {
   const [period, setPeriod] = useState<Period>('Week');
   const [chartData, setChartData] = useState(mockWeeklyData);
 
-  const handleBarPress = (item: WeeklyData, index: number) => {
-    setChartData((prev) =>
-      prev.map((d, i) => ({ ...d, isActive: i === index }))
-    );
+  const handleBarPress = (_item: WeeklyData, index: number) => {
+    setChartData((prev) => prev.map((d, i) => ({ ...d, isActive: i === index })));
   };
 
   return (
