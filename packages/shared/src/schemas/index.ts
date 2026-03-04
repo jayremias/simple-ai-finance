@@ -1,6 +1,2 @@
-export {
-  createAccountSchema,
-  updateAccountSchema,
-  accountResponseSchema,
-  listAccountsQuerySchema,
-} from './account';
+export * from "./user";
+export * from './account';

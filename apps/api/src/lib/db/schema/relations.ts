@@ -3,13 +3,25 @@ import { account, session, user } from './auth';
 import { financialAccount } from './financial-account';
 import { invitation, member, organization } from './organization';
 import { team, teamMember } from './team';
+import { userProfile } from './user-profile';
 
-export const userRelations = relations(user, ({ many }) => ({
+export const userRelations = relations(user, ({ one, many }) => ({
   sessions: many(session),
   accounts: many(account),
   members: many(member),
   invitations: many(invitation),
   teamMembers: many(teamMember),
+  profile: one(userProfile, {
+    fields: [user.id],
+    references: [userProfile.userId],
+  }),
+}));
+
+export const userProfileRelations = relations(userProfile, ({ one }) => ({
+  user: one(user, {
+    fields: [userProfile.userId],
+    references: [user.id],
+  }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({

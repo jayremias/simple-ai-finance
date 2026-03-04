@@ -1,9 +1,15 @@
 import { rateLimiter } from 'hono-rate-limiter';
+import { createMiddleware } from 'hono/factory';
 
 type RateLimiterOptions = {
   windowMs?: number;
   limit?: number;
 };
+
+const isTest = process.env.NODE_ENV === 'test';
+
+// In test mode, skip rate limiting entirely
+const noopMiddleware = createMiddleware(async (_c, next) => next());
 
 function getClientKey(c: { req: { header: (name: string) => string | undefined } }): string {
   return (
@@ -12,6 +18,8 @@ function getClientKey(c: { req: { header: (name: string) => string | undefined }
 }
 
 export function createLimiter(options: RateLimiterOptions = {}) {
+  if (isTest) return noopMiddleware;
+
   const { windowMs = 15 * 60 * 1000, limit = 100 } = options;
 
   return rateLimiter({
