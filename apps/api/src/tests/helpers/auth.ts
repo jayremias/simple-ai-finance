@@ -30,6 +30,7 @@ export async function createTestUser(options: CreateTestUserOptions = {}) {
     })
     .returning();
 
+  if (!created) throw new Error('Failed to create test user');
   return created;
 }
 

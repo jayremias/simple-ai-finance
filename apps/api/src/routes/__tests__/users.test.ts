@@ -1,7 +1,10 @@
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
+import type { UserProfileResponse } from '@moneylens/shared';
 import { app } from '@/index';
 import { bearerHeader, createAuthenticatedUser } from '@/tests/helpers/auth';
 import { truncateAll } from '@/tests/helpers/db';
+
+type ErrorResponse = { error: { code: string } };
 
 // Clean state between tests
 beforeEach(async () => {
@@ -22,7 +25,7 @@ describe('GET /api/v1/users/me', () => {
     const res = await app.request('/api/v1/users/me');
 
     expect(res.status).toBe(401);
-    const body = await res.json();
+    const body = (await res.json()) as ErrorResponse;
     expect(body.error.code).toBe('UNAUTHORIZED');
   });
 
@@ -37,7 +40,7 @@ describe('GET /api/v1/users/me', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as UserProfileResponse;
     expect(body.id).toBe(user.id);
     expect(body.name).toBe('Alice');
     expect(body.email).toBe('alice@example.com');
@@ -56,7 +59,7 @@ describe('GET /api/v1/users/me', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as UserProfileResponse;
     expect(body.defaultCurrency).toBe('USD');
     expect(body.locale).toBe('en-US');
   });
@@ -87,7 +90,7 @@ describe('PATCH /api/v1/users/me', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as UserProfileResponse;
     expect(body.name).toBe('Alice Updated');
   });
 
@@ -101,7 +104,7 @@ describe('PATCH /api/v1/users/me', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as UserProfileResponse;
     expect(body.defaultCurrency).toBe('BRL');
   });
 
@@ -115,7 +118,7 @@ describe('PATCH /api/v1/users/me', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as UserProfileResponse;
     expect(body.locale).toBe('pt-BR');
   });
 
@@ -129,7 +132,7 @@ describe('PATCH /api/v1/users/me', () => {
     });
 
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = (await res.json()) as ErrorResponse;
     expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 
@@ -143,7 +146,7 @@ describe('PATCH /api/v1/users/me', () => {
     });
 
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = (await res.json()) as ErrorResponse;
     expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 
@@ -165,7 +168,7 @@ describe('PATCH /api/v1/users/me', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as UserProfileResponse;
     expect(body.name).toBe('Alice v2');
     expect(body.locale).toBe('pt-BR');
   });
@@ -188,7 +191,7 @@ describe('PATCH /api/v1/users/me', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as UserProfileResponse;
     expect(body.image).toBeNull();
   });
 });

@@ -31,15 +31,19 @@ export async function getUserProfile(userId: string): Promise<UserProfileRespons
   // Auto-create profile with defaults on first fetch
   if (row.defaultCurrency === null) {
     await db.insert(userProfile).values({ userId }).onConflictDoNothing();
-
-    return {
-      ...row,
-      defaultCurrency: 'USD',
-      locale: 'en-US',
-    } as UserProfileResponse;
   }
 
-  return row as UserProfileResponse;
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    emailVerified: row.emailVerified,
+    image: row.image,
+    defaultCurrency: (row.defaultCurrency ?? 'USD') as UserProfileResponse['defaultCurrency'],
+    locale: (row.locale ?? 'en-US') as UserProfileResponse['locale'],
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
 }
 
 /**

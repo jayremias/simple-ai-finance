@@ -1,0 +1,22 @@
+# Lefthook configuration
+# https://github.com/evilmartians/lefthook
+
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: "*.{ts,tsx}"
+      run: bunx biome check --write {staged_files}
+      stage_fixed: true
+
+    typecheck:
+      run: bun --cwd apps/api tsc --noEmit
+
+pre-push:
+  parallel: true
+  commands:
+    lint:
+      run: bun run lint
+
+    test:
+      run: bun run test

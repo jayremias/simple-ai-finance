@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { admin, organization } from 'better-auth/plugins';
+import { admin, bearer, organization } from 'better-auth/plugins';
 import { eq } from 'drizzle-orm';
 import { env as rootEnv } from '@/env';
 import { db } from '@/lib/db';
@@ -137,6 +137,7 @@ export const auth = betterAuth({
   },
 
   plugins: [
+    bearer(),
     admin({
       defaultRole: 'user',
     }),

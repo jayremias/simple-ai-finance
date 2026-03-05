@@ -13,8 +13,11 @@ export async function truncateAll(): Promise<void> {
       "session",
       "account",
       "verification",
+      "financial_account",
+      "team_member",
       "member",
       "invitation",
+      "team",
       "organization",
       "user"
     RESTART IDENTITY`
