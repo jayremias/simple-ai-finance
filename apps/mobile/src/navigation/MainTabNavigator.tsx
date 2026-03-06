@@ -4,7 +4,7 @@ import type React from 'react';
 import { Colors } from '@/theme/colors';
 import { AnalyticsPlaceholderScreen } from '../screens/AnalyticsPlaceholderScreen';
 import { HomeScreen } from '../screens/HomeScreen';
-import { ProfilePlaceholderScreen } from '../screens/ProfilePlaceholderScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
 import { ScanPlaceholderScreen } from '../screens/ScanPlaceholderScreen';
 import type { MainTabParamList } from '../types';
 
@@ -63,7 +63,7 @@ export function MainTabNavigator() {
       />
       <Tab.Screen
         name="Profile"
-        component={ProfilePlaceholderScreen}
+        component={ProfileScreen}
         options={{
           tabBarIcon: ({ focused }) => (
             <TabBarIcon name={focused ? 'person' : 'person-outline'} focused={focused} />

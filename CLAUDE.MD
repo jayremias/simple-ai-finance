@@ -173,9 +173,25 @@ Zod is the **single validation library** across the entire stack. All schemas li
 - No soft deletes — deleted data is removed (with cascading where appropriate)
 - Indexes on all foreign keys and commonly filtered columns (date, type, category_id)
 
+### Domain Model — Better Auth primitives map to app concepts
+
+Better Auth's `organization` and `team` primitives are repurposed as first-class domain entities:
+
+| Better Auth primitive | App concept  | Description                                                        |
+| --------------------- | ------------ | ------------------------------------------------------------------ |
+| `organization`        | **Workspace** | Top-level container. Auto-created as "Personal" on sign-up. Users can be invited to share an entire workspace. |
+| `team`                | **Account**  | A financial account (bank account, credit card, investment, etc.) within a workspace. Users can be invited to individual accounts. |
+
+- **Sharing at workspace level** → invite user to `organization` (sees all accounts)
+- **Sharing at account level** → invite user to a specific `team` (sees only that account)
+- Our `financial_account` table **extends** `team` with finance-specific metadata (type, currency, balance snapshot, color, icon). It is NOT a replacement — every financial account has a corresponding Better Auth team.
+- Transactions, budgets, categories, etc. reference `team.id` (= account id), not a standalone FK.
+
 ### Core Tables
 
-`user`, `financial_account`, `transaction`, `transaction_split`, `category`, `tag`, `transaction_tag`, `recurring_rule`, `budget`, `budget_period`, `exchange_rate`, `account_share`, `device_token`
+`user_profile`, `financial_account` (extends BA `team`), `transaction`, `transaction_split`, `category`, `tag`, `transaction_tag`, `recurring_rule`, `budget`, `budget_period`, `exchange_rate`, `device_token`
+
+> Better Auth manages: `user`, `session`, `account`, `verification`, `organization`, `member`, `invitation`, `team`, `team_member`
 
 ## Authentication
 
@@ -184,7 +200,8 @@ Zod is the **single validation library** across the entire stack. All schemas li
 - Social sign-in: Google + Apple via Better Auth plugins
 - Email verification and password reset handled by Better Auth
 - Session tokens stored in device secure storage via `expo-secure-store` (not AsyncStorage)
-- Better Auth manages its own DB tables (user, session, account, verification)
+- Better Auth manages its own DB tables (user, session, account, verification, organization, member, invitation, team, team_member)
+- **`bearer()` plugin enabled** — mobile clients authenticate via `Authorization: Bearer <token>`
 
 ## API Design
 
