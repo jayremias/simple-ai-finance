@@ -29,6 +29,7 @@ export interface ReceiptDetail {
 }
 
 export type RootStackParamList = {
+  Login: undefined;
   MainTabs: undefined;
   ReceiptDetail: { receipt: ReceiptDetail };
   WeeklyAnalysis: undefined;

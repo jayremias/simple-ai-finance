@@ -22,6 +22,6 @@ authRoutes.use('/forget-password', sensitiveAuthLimiter);
 authRoutes.use('/reset-password', sensitiveAuthLimiter);
 authRoutes.use('/delete-user', sensitiveAuthLimiter);
 
-authRoutes.on(['POST', 'GET'], '/**', (c) => auth.handler(c.req.raw));
+authRoutes.on(['POST', 'GET'], '/*', (c) => auth.handler(c.req.raw));
 
 export default authRoutes;

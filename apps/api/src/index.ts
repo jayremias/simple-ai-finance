@@ -32,7 +32,7 @@ app.use('/api/auth/*', authLimiter);
 app.use('/api/auth/forget-password', sensitiveAuthLimiter);
 app.use('/api/auth/reset-password', sensitiveAuthLimiter);
 app.use('/api/auth/delete-user', sensitiveAuthLimiter);
-app.on(['POST', 'GET'], '/api/auth/**', (c) => auth.handler(c.req.raw));
+app.on(['POST', 'GET'], '/api/auth/*', (c) => auth.handler(c.req.raw));
 app.route('/', authRoutes);
 
 // --- Business routes (/api/v1/*) ---
