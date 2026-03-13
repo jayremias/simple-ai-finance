@@ -328,6 +328,7 @@ src/
 
 - **PRD**: `docs/moneylens-mobile-prd.md` — full product requirements, features, phases, acceptance criteria
 - **Tech Overview**: `docs/moneylens-tech-overview.md` — architecture, tech stack details, database schema, processing pipelines, deployment
+- **Progress Tracker**: `docs/progress.md` — what is done and what still needs to be built, ordered by priority. **Read this at the start of every session** to understand current state and next steps.
 
 ## Guidelines
 
