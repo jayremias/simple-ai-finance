@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type React from 'react';
 import { Colors } from '@/theme/colors';
-import { AnalyticsPlaceholderScreen } from '../screens/AnalyticsPlaceholderScreen';
+import { AccountsScreen } from '../screens/AccountsScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { ScanPlaceholderScreen } from '../screens/ScanPlaceholderScreen';
@@ -44,11 +44,11 @@ export function MainTabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Analytics"
-        component={AnalyticsPlaceholderScreen}
+        name="Accounts"
+        component={AccountsScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon name={focused ? 'bar-chart' : 'bar-chart-outline'} focused={focused} />
+            <TabBarIcon name={focused ? 'wallet' : 'wallet-outline'} focused={focused} />
           ),
         }}
       />
