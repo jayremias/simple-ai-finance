@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { session, user } from '@/lib/db/schema';
 import { member, organization } from '@/lib/db/schema/organization';
+import { seedDefaultCategories } from '@/services/categories.service';
 
 type CreateTestUserOptions = {
   name?: string;
@@ -119,6 +120,7 @@ export async function setActiveOrg(token: string, organizationId: string): Promi
 export async function createAuthenticatedUserWithOrg(options: CreateTestUserOptions = {}) {
   const testUser = await createTestUser(options);
   const org = await createTestOrg(testUser.id);
+  await seedDefaultCategories(org.id);
   const token = await createTestSession(testUser.id, { activeOrganizationId: org.id });
   return { user: testUser, org, token };
 }

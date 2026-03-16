@@ -10,6 +10,7 @@ export async function truncateAll(): Promise<void> {
   await db.execute(
     sql`TRUNCATE TABLE
       "user_profile",
+      "category",
       "session",
       "account",
       "verification",

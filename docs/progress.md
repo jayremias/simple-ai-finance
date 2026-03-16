@@ -1,6 +1,6 @@
 # MoneyLens — Build Progress
 
-> Last updated: 2026-03-13
+> Last updated: 2026-03-16
 
 ---
 
@@ -55,6 +55,23 @@
 - [x] Delete account with confirmation alert
 - [x] Accounts tab in bottom navigation (wallet icon)
 
+### API — Categories
+- [x] DB schema: `category` table (id, orgId, name, translationKey, icon, color, parentId, sortOrder, isDefault)
+- [x] Default categories seeded on workspace creation (12 parents + subcategories)
+- [x] `GET /api/v1/categories` — list as tree (parents + nested children)
+- [x] `POST /api/v1/categories` — create (root or child, max 1 level deep)
+- [x] `PATCH /api/v1/categories/:id` — update name, icon, color
+- [x] `DELETE /api/v1/categories/:id` — delete (cascades to children)
+- [x] Tests: full route coverage (21 tests)
+- [x] i18n: `translationKey` for defaults + `CATEGORY_TRANSLATIONS` map in shared package
+
+### Mobile — Categories
+- [x] `useCategories`, `useCreateCategory`, `useUpdateCategory`, `useDeleteCategory` hooks
+- [x] CategoriesScreen: tree list (expandable parents → children)
+- [x] Create category / subcategory bottom sheet (name, icon, color)
+- [x] Edit category / subcategory bottom sheet (pre-filled, delete with confirmation)
+- [x] Categories tab in bottom navigation (pricetag icon)
+
 ---
 
 ## 🔲 To Do
@@ -63,20 +80,13 @@
 
 ### Phase 2 — Core Financial Engine
 
-#### Categories (API + Mobile)
-- [ ] DB schema: `category` table (id, orgId, name, icon, color, parentId, sortOrder)
-- [ ] Seed default categories on workspace creation (Housing, Food, Transport, Health, etc.)
-- [ ] `GET /api/v1/categories` — list categories (tree structure)
-- [ ] `POST /api/v1/categories` — create category
-- [ ] `PATCH /api/v1/categories/:id` — update
-- [ ] `DELETE /api/v1/categories/:id` — delete (with reassign/archive guard)
-- [ ] Tests: full route coverage
-- [ ] Mobile: `useCategories` hook
-- [ ] Mobile: CategoriesScreen (list + create/edit/delete)
-- [ ] Mobile: Category picker component (reusable in transaction form)
+#### Category Picker (Mobile)
+- [ ] Mobile: Category picker component (reusable bottom sheet for transaction form)
 
 #### Transactions (API + Mobile) — depends on Categories
-- [ ] DB schema: `transaction` table (id, accountId, categoryId, type, amount, date, payee, notes)
+
+#### Transactions (API + Mobile) — depends on Categories
+- [ ] DB schema: `transaction` table (id, accountId, categoryId nullable, type, amount, date, payee, notes)
 - [ ] DB schema: `transaction_split` table
 - [ ] DB schema: `tag`, `transaction_tag` tables
 - [ ] `POST /api/v1/transactions` — create (income, expense, transfer)
