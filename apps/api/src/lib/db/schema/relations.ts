@@ -3,7 +3,9 @@ import { account, session, user } from './auth';
 import { category } from './category';
 import { financialAccount } from './financial-account';
 import { invitation, member, organization } from './organization';
+import { tag } from './tag';
 import { team, teamMember } from './team';
+import { transaction, transactionTag } from './transaction';
 import { userProfile } from './user-profile';
 
 export const userRelations = relations(user, ({ one, many }) => ({
@@ -113,5 +115,40 @@ export const financialAccountRelations = relations(financialAccount, ({ one }) =
   organization: one(organization, {
     fields: [financialAccount.organizationId],
     references: [organization.id],
+  }),
+}));
+
+export const tagRelations = relations(tag, ({ one, many }) => ({
+  organization: one(organization, {
+    fields: [tag.organizationId],
+    references: [organization.id],
+  }),
+  transactionTags: many(transactionTag),
+}));
+
+export const transactionRelations = relations(transaction, ({ one, many }) => ({
+  organization: one(organization, {
+    fields: [transaction.organizationId],
+    references: [organization.id],
+  }),
+  account: one(team, {
+    fields: [transaction.accountId],
+    references: [team.id],
+  }),
+  category: one(category, {
+    fields: [transaction.categoryId],
+    references: [category.id],
+  }),
+  transactionTags: many(transactionTag),
+}));
+
+export const transactionTagRelations = relations(transactionTag, ({ one }) => ({
+  transaction: one(transaction, {
+    fields: [transactionTag.transactionId],
+    references: [transaction.id],
+  }),
+  tag: one(tag, {
+    fields: [transactionTag.tagId],
+    references: [tag.id],
   }),
 }));

@@ -1,6 +1,6 @@
 # MoneyLens — Build Progress
 
-> Last updated: 2026-03-16
+> Last updated: 2026-03-17
 
 ---
 
@@ -72,6 +72,33 @@
 - [x] Edit category / subcategory bottom sheet (pre-filled, delete with confirmation)
 - [x] Categories tab in bottom navigation (pricetag icon)
 
+### API — Tags
+- [x] DB schema: `tag` table (id, orgId, name unique per org)
+- [x] `GET /api/v1/tags` — list tags for org
+- [x] `POST /api/v1/tags` — create tag (409 on duplicate)
+- [x] `DELETE /api/v1/tags/:id` — delete tag
+- [x] Tests: full route coverage
+
+### API — Transactions
+- [x] DB schema: `transaction` table (id, orgId, accountId→team.id, categoryId nullable, type, signed amount in cents, date YYYY-MM-DD, payee, notes, transferId nullable)
+- [x] DB schema: `transaction_tag` join table
+- [x] `POST /api/v1/transactions` — create (income, expense, transfer linked pair)
+- [x] `GET /api/v1/transactions` — list with cursor pagination + filters (accountId, categoryId, type, dateFrom, dateTo)
+- [x] `GET /api/v1/transactions/:id` — single transaction with tags
+- [x] `PATCH /api/v1/transactions/:id` — update fields + replace tags
+- [x] `DELETE /api/v1/transactions/:id` — delete (cascades both sides of a transfer)
+- [x] Transfer handling: linked pair sharing `transferId`, signed amounts (outflow negative, inflow positive)
+- [x] Tags: associated on create/update, returned in response
+- [x] Tests: full route coverage (35 tests)
+
+### AI lib
+- [x] OpenRouter client (`lib/ai/client.ts`) — OpenAI SDK pointing at OpenRouter, model-agnostic
+- [x] `lib/ai/env.ts` — `OPENROUTER_API_KEY`, `AI_MODEL`, `AI_VISION_MODEL`, `AI_PDF_CONFIDENCE_THRESHOLD`
+- [x] `lib/ai/ocr/pdf.ts` — unpdf text extraction → cheap model confidence scoring → vision fallback if below threshold
+- [x] `lib/ai/ocr/image.ts` — vision model for images (base64)
+- [x] `lib/ai/ocr/index.ts` — routes by MIME type (PDF vs image)
+- [x] `lib/ai/parse.ts` — cheap model parses extracted text → `ParsedTransactionItem[]` with per-item confidence + sourceConfidence
+
 ---
 
 ## 🔲 To Do
@@ -83,19 +110,7 @@
 #### Category Picker (Mobile)
 - [ ] Mobile: Category picker component (reusable bottom sheet for transaction form)
 
-#### Transactions (API + Mobile) — depends on Categories
-
-#### Transactions (API + Mobile) — depends on Categories
-- [ ] DB schema: `transaction` table (id, accountId, categoryId nullable, type, amount, date, payee, notes)
-- [ ] DB schema: `transaction_split` table
-- [ ] DB schema: `tag`, `transaction_tag` tables
-- [ ] `POST /api/v1/transactions` — create (income, expense, transfer)
-- [ ] `GET /api/v1/transactions` — list with cursor pagination + filters (account, category, date range, type, search)
-- [ ] `GET /api/v1/transactions/:id` — single transaction
-- [ ] `PATCH /api/v1/transactions/:id` — update
-- [ ] `DELETE /api/v1/transactions/:id` — delete
-- [ ] Transfer handling: linked debit + credit entries
-- [ ] Tests: full route coverage
+#### Transactions (Mobile) — depends on API done above
 - [ ] Mobile: `useTransactions`, `useCreateTransaction`, `useUpdateTransaction`, `useDeleteTransaction` hooks
 - [ ] Mobile: TransactionListScreen (paginated, filterable)
 - [ ] Mobile: Transaction form (quick-add FAB + full form)

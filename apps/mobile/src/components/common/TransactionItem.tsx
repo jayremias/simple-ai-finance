@@ -1,45 +1,66 @@
+import { Ionicons } from '@expo/vector-icons';
+import type { TransactionResponse } from '@moneylens/shared';
 import { StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/theme/colors';
-import type { Transaction } from '../../types';
 
 interface TransactionItemProps {
-  transaction: Transaction;
-  showPaymentMethod?: boolean;
+  transaction: TransactionResponse;
 }
 
-const APP_ICONS: Record<string, { symbol: string; color: string }> = {
-  Figma: { symbol: '✦', color: '#FF7262' },
-  Sketch: { symbol: '◆', color: '#FDB300' },
-  Slack: { symbol: '#', color: '#E01E5A' },
-  'Adobe Creative Cloud': { symbol: 'Cc', color: '#FF0000' },
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+
+const TYPE_ICON: Record<string, IoniconsName> = {
+  income: 'arrow-up-circle',
+  expense: 'arrow-down-circle',
+  transfer: 'swap-horizontal',
 };
 
-export function TransactionItem({ transaction, showPaymentMethod = false }: TransactionItemProps) {
-  const icon = APP_ICONS[transaction.name] ?? { symbol: '★', color: Colors.brandBlue };
-  const amountStr =
-    transaction.amount < 0
-      ? `-$${Math.abs(transaction.amount).toFixed(0)}`
-      : `+$${transaction.amount.toFixed(0)}`;
+const TYPE_COLOR: Record<string, string> = {
+  income: Colors.success,
+  expense: Colors.danger,
+  transfer: Colors.brandBlue,
+};
+
+/** Converts a signed cent amount to a display string: +$12.50 / -$12.50 */
+function formatAmount(cents: number, currency = 'USD'): string {
+  const abs = Math.abs(cents) / 100;
+  const formatted = abs.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const symbol = currency === 'BRL' ? 'R$' : '$';
+  return cents >= 0 ? `+${symbol}${formatted}` : `-${symbol}${formatted}`;
+}
+
+/** Formats YYYY-MM-DD to e.g. "Jan 15, 2024" */
+function formatDate(date: string): string {
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+export function TransactionItem({ transaction }: TransactionItemProps) {
+  const color = TYPE_COLOR[transaction.type] ?? Colors.brandBlue;
+  const icon = TYPE_ICON[transaction.type] ?? 'ellipse-outline';
+  const label = transaction.payee ?? transaction.type;
 
   return (
     <View style={styles.container}>
-      <View
-        style={[styles.iconContainer, { backgroundColor: transaction.iconBg || `${icon.color}33` }]}
-      >
-        <Text style={[styles.iconText, { color: icon.color }]}>{icon.symbol}</Text>
+      <View style={[styles.iconContainer, { backgroundColor: `${color}22` }]}>
+        <Ionicons name={icon} size={22} color={color} />
       </View>
       <View style={styles.info}>
-        <Text style={styles.name}>{transaction.name}</Text>
-        <Text style={styles.date}>{transaction.date}</Text>
-      </View>
-      <View style={styles.amountContainer}>
-        <Text style={[styles.amount, transaction.amount < 0 ? styles.negative : styles.positive]}>
-          {amountStr}
+        <Text style={styles.name} numberOfLines={1}>
+          {label}
         </Text>
-        {showPaymentMethod && transaction.paymentMethod ? (
-          <Text style={styles.paymentMethod}>{transaction.paymentMethod}</Text>
-        ) : null}
+        <Text style={styles.date}>{formatDate(transaction.date)}</Text>
       </View>
+      <Text style={[styles.amount, transaction.amount >= 0 ? styles.positive : styles.negative]}>
+        {formatAmount(transaction.amount)}
+      </Text>
     </View>
   );
 }
@@ -54,16 +75,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
-  },
-  iconText: {
-    fontSize: 20,
-    fontWeight: '700',
   },
   info: {
     flex: 1,
@@ -78,22 +95,14 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontSize: 12,
   },
-  amountContainer: {
-    alignItems: 'flex-end',
-  },
   amount: {
     fontSize: 15,
     fontWeight: '700',
   },
-  negative: {
-    color: Colors.textPrimary,
-  },
   positive: {
     color: Colors.success,
   },
-  paymentMethod: {
-    color: Colors.textMuted,
-    fontSize: 11,
-    marginTop: 2,
+  negative: {
+    color: Colors.textPrimary,
   },
 });

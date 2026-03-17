@@ -10,6 +10,8 @@ import accounts from '@/routes/accounts';
 import authRoutes from '@/routes/auth';
 import categories from '@/routes/categories';
 import health from '@/routes/health';
+import tags from '@/routes/tags';
+import transactions from '@/routes/transactions';
 import users from '@/routes/users';
 
 const app = new Hono();
@@ -44,6 +46,8 @@ api.route('/', health);
 api.route('/users', users);
 api.route('/', accounts);
 api.route('/', categories);
+api.route('/', tags);
+api.route('/', transactions);
 
 app.route('/', api);
 
