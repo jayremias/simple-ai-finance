@@ -7,6 +7,7 @@ import {
   FlatList,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -61,9 +62,7 @@ function AccountCard({ account, onPress }: { account: AccountResponse; onPress: 
         <Text style={styles.cardType}>{ACCOUNT_TYPE_LABELS[account.type] ?? account.type}</Text>
       </View>
       <View style={styles.cardRight}>
-        <Text style={styles.cardBalance}>
-          {formatBalance(account.initialBalance, account.currency)}
-        </Text>
+        <Text style={styles.cardBalance}>{formatBalance(account.balance, account.currency)}</Text>
         <Text style={styles.cardCurrency}>{account.currency}</Text>
       </View>
     </TouchableOpacity>
@@ -310,9 +309,16 @@ function AccountFormSheet({
 
 export function AccountsScreen() {
   const insets = useSafeAreaInsets();
-  const { data: accounts, isLoading, error } = useAccounts();
+  const { data: accounts, isLoading, error, refetch } = useAccounts();
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<AccountResponse | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }
 
   function openCreate() {
     setSelectedAccount(null);
@@ -343,6 +349,13 @@ export function AccountsScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <AccountCard account={item} onPress={() => openEdit(item)} />}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={Colors.brandBlue}
+            />
+          }
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>No accounts yet</Text>

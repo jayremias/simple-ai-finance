@@ -8,6 +8,7 @@ import {
   Alert,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -299,13 +300,20 @@ function TransactionFormSheet({
 
 export function HomeScreen() {
   const navigation = useNavigation<HomeNavProp>();
-  const { data: profile } = useUserProfile();
-  const { data: accountsData } = useAccounts();
-  const { data: transactionsData } = useTransactions({ limit: 10 });
+  const { data: profile, refetch: refetchProfile } = useUserProfile();
+  const { data: accountsData, refetch: refetchAccounts } = useAccounts();
+  const { data: transactionsData, refetch: refetchTransactions } = useTransactions({ limit: 10 });
   const [formVisible, setFormVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await Promise.all([refetchProfile(), refetchAccounts(), refetchTransactions()]);
+    setRefreshing(false);
+  }
 
   const accounts = accountsData ?? [];
-  const totalBalanceCents = accounts.reduce((sum, a) => sum + a.initialBalance, 0);
+  const totalBalanceCents = accounts.reduce((sum, a) => sum + a.balance, 0);
   const totalBalance = totalBalanceCents / 100;
   const firstName = profile?.name?.split(' ')[0] ?? '';
   const transactions = transactionsData?.data ?? [];
@@ -333,6 +341,13 @@ export function HomeScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.brandBlue}
+          />
+        }
       >
         <HomeHeader
           userName={firstName}
