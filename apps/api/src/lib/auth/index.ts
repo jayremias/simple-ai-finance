@@ -99,13 +99,15 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
-          await auth.api.createOrganization({
+          const org = await auth.api.createOrganization({
             body: {
               name: 'Personal',
               slug: `personal-${user.id}`,
               userId: user.id,
             },
           });
+          const { seedDefaultCategories } = await import('@/services/categories.service');
+          await seedDefaultCategories(org.id);
         },
       },
     },

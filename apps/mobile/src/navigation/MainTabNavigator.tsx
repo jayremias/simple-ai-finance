@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type React from 'react';
 import { Colors } from '@/theme/colors';
 import { AccountsScreen } from '../screens/AccountsScreen';
+import { CategoriesScreen } from '../screens/CategoriesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { ScanPlaceholderScreen } from '../screens/ScanPlaceholderScreen';
@@ -49,6 +50,15 @@ export function MainTabNavigator() {
         options={{
           tabBarIcon: ({ focused }) => (
             <TabBarIcon name={focused ? 'wallet' : 'wallet-outline'} focused={focused} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Categories"
+        component={CategoriesScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabBarIcon name={focused ? 'pricetag' : 'pricetag-outline'} focused={focused} />
           ),
         }}
       />

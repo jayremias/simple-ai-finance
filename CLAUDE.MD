@@ -341,3 +341,4 @@ src/
 - We can implement in steps. First simple solution to validate the implementation and code. Get feedback. Then improve.
 - You can ask for human interaction to solve things. I am a experience 20+ yrs developer.
 - Never use workarounds — if something doesn't work, ask for help. We are a team.
+- **No emojis in UI** — always use an icon library (the project uses `@expo/vector-icons` / Ionicons). Never use emoji characters as icons or decorative elements in mobile screens.

@@ -8,6 +8,7 @@ import { notFound, onError } from '@/middleware/error-handler';
 import { authLimiter, sensitiveAuthLimiter } from '@/middleware/rate-limiter';
 import accounts from '@/routes/accounts';
 import authRoutes from '@/routes/auth';
+import categories from '@/routes/categories';
 import health from '@/routes/health';
 import users from '@/routes/users';
 
@@ -42,6 +43,7 @@ setupMiddleware(api);
 api.route('/', health);
 api.route('/users', users);
 api.route('/', accounts);
+api.route('/', categories);
 
 app.route('/', api);
 

@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import { account, session, user } from './auth';
+import { category } from './category';
 import { financialAccount } from './financial-account';
 import { invitation, member, organization } from './organization';
 import { team, teamMember } from './team';
@@ -43,6 +44,20 @@ export const organizationRelations = relations(organization, ({ many }) => ({
   invitations: many(invitation),
   teams: many(team),
   financialAccounts: many(financialAccount),
+  categories: many(category),
+}));
+
+export const categoryRelations = relations(category, ({ one, many }) => ({
+  organization: one(organization, {
+    fields: [category.organizationId],
+    references: [organization.id],
+  }),
+  parent: one(category, {
+    fields: [category.parentId],
+    references: [category.id],
+    relationName: 'parentChild',
+  }),
+  children: many(category, { relationName: 'parentChild' }),
 }));
 
 export const memberRelations = relations(member, ({ one }) => ({
