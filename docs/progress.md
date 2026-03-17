@@ -1,6 +1,70 @@
 # MoneyLens — Build Progress
 
-> Last updated: 2026-03-17
+> Last updated: 2026-03-17 (session 3)
+
+---
+
+## 🏃 Current Sprint
+
+> Two parallel workstreams. Core rule: P1 owns API + shared schemas. P2 owns mobile. Neither touches the other's layer.
+
+### Person 1 — Backend & New Domains
+**Owns:** `apps/api/`, `packages/shared/schemas/`, `packages/shared/types/`
+
+#### Recurring Payments (Sprint 1)
+- [ ] DB schema: `recurring_rule` table (frequency, amount, accountId, categoryId, nextDueAt, status, paused)
+- [ ] `packages/shared/src/schemas/recurring.ts` — create/update/response schemas
+- [ ] `apps/api/src/services/recurring.service.ts` — CRUD + generation logic
+- [ ] `apps/api/src/services/__tests__/recurring.service.test.ts` — service-level tests for generation
+- [ ] `apps/api/src/routes/recurring.ts` — full CRUD + pause/resume endpoints
+- [ ] `apps/api/src/routes/__tests__/recurring.test.ts` — route tests
+- [ ] `apps/api/src/jobs/recurring.ts` — daily cron: generate due transactions
+- [ ] `apps/api/src/index.ts` — mount recurring routes
+
+#### Reports API (Sprint 2)
+- [ ] `apps/api/src/routes/reports.ts` — income-expenses, spending-by-category, account-summary
+- [ ] `packages/shared/src/schemas/report.ts` — response schemas
+- [ ] Mount in `apps/api/src/index.ts`
+
+#### Budgets — API only (Sprint 2)
+- [ ] DB schema: `budget`, `budget_period` tables
+- [ ] `packages/shared/src/schemas/budget.ts`
+- [ ] `apps/api/src/services/budget.service.ts` + tests
+- [ ] `apps/api/src/routes/budget.ts` + tests
+
+---
+
+### Person 2 — Mobile & Product Polish
+**Owns:** `apps/mobile/` — reads (never writes) `packages/shared/`
+
+#### Transaction Polish (Sprint 1)
+- [ ] `useUpdateTransaction`, `useDeleteTransaction` in `hooks/useTransactions.ts`
+- [ ] `TransactionItem` tappable → edit/delete bottom sheet
+- [ ] `TransactionListScreen` — paginated list with filter bar (account, type, date range)
+
+#### Tags in Transaction Form (Sprint 1)
+- [ ] Tag autocomplete chips in transaction form (create-on-type + select existing)
+- [ ] Uses existing `GET /api/v1/tags` + `POST /api/v1/tags`
+
+#### Recurring — Mobile (Sprint 2, after P1 ships schemas)
+- [ ] `useRecurring` hooks
+- [ ] `RecurringScreen` — list rules, create/edit sheet, pause/resume
+- [ ] Pending review queue (confirm/adjust auto-generated transactions)
+
+#### Analytics Screen (Sprint 2, after P1 ships reports)
+- [ ] Wire up `AnalyticsPlaceholderScreen` using reports API
+- [ ] Monthly bar chart (income vs expenses) + spending donut by category
+
+---
+
+### No-conflict ownership
+| File / Area | Owner |
+|---|---|
+| `apps/api/src/index.ts` | P1 only |
+| `packages/shared/src/schemas/` | P1 writes → P2 reads |
+| `apps/mobile/src/navigation/` | P2 only |
+| New DB schema files | P1 only |
+| New mobile screens | P2 only |
 
 ---
 
@@ -15,9 +79,12 @@
 ### API — Authentication
 - [x] Better Auth configured (email/password, Google, Apple placeholders)
 - [x] `bearer()` plugin enabled for mobile token auth
-- [x] Personal workspace auto-created on sign-up (org DB hook)
+- [x] `expo()` plugin + `trustedOrigins` configured for React Native (no Origin header)
+- [x] `expo-origin: moneylens://` header sent by mobile clients to bypass CSRF
+- [x] Personal workspace auto-created on sign-up via direct DB inserts (bypasses BA HTTP layer / CSRF)
+- [x] Account creation via direct DB inserts (team + teamMember + financialAccount in one transaction)
+- [x] Session middleware fallback: looks up org from member table if `activeOrganizationId` is null
 - [x] Session auto-sets `activeOrganizationId` on creation
-- [x] Wildcard routing fixed (`*` not `**`)
 
 ### API — Users
 - [x] `GET /api/v1/users/me` — returns user + profile
@@ -32,13 +99,16 @@
 - [x] `PATCH /api/v1/accounts/:id` — update fields, sync BA team name
 - [x] `DELETE /api/v1/accounts/:id` — delete account + BA team
 - [x] Role-based access (owner/editor/viewer via org or team membership)
+- [x] Running balance: `initialBalance + SUM(transactions)` returned on all account responses
 - [x] Tests: full route coverage
 
 ### Mobile — Auth
 - [x] Login + Register screen (mode toggle, confirm password)
+- [x] Currency picker on register (USD / BRL chips)
+- [x] Device locale auto-detected on register (`expo-localization`) → stored as `locale` in profile
 - [x] `expo-secure-store` token persistence
 - [x] Zustand auth store (`token`, `user`, `isAuthenticated`)
-- [x] Axios API client with Bearer token interceptor
+- [x] Axios API client with Bearer token interceptor + `expo-origin` header
 - [x] Auto sign-out on 401
 - [x] Auth-conditional navigation (bootstrap from SecureStore)
 
@@ -49,15 +119,18 @@
 
 ### Mobile — Accounts
 - [x] `useAccounts`, `useCreateAccount`, `useUpdateAccount`, `useDeleteAccount` hooks
-- [x] AccountsScreen: list all accounts with balance display
+- [x] AccountsScreen: list all accounts with running balance display
 - [x] Create account bottom sheet (name, type, currency, initial balance, color)
+- [x] Currency defaults to user's `defaultCurrency` from profile
 - [x] Edit account bottom sheet (pre-filled, save changes)
 - [x] Delete account with confirmation alert
+- [x] Pull-to-refresh on AccountsScreen
 - [x] Accounts tab in bottom navigation (wallet icon)
 
 ### API — Categories
 - [x] DB schema: `category` table (id, orgId, name, translationKey, icon, color, parentId, sortOrder, isDefault)
 - [x] Default categories seeded on workspace creation (12 parents + subcategories)
+- [x] All default category icons use Ionicons names (no emojis)
 - [x] `GET /api/v1/categories` — list as tree (parents + nested children)
 - [x] `POST /api/v1/categories` — create (root or child, max 1 level deep)
 - [x] `PATCH /api/v1/categories/:id` — update name, icon, color
@@ -70,6 +143,7 @@
 - [x] CategoriesScreen: tree list (expandable parents → children)
 - [x] Create category / subcategory bottom sheet (name, icon, color)
 - [x] Edit category / subcategory bottom sheet (pre-filled, delete with confirmation)
+- [x] Pull-to-refresh on CategoriesScreen
 - [x] Categories tab in bottom navigation (pricetag icon)
 
 ### API — Tags
@@ -101,96 +175,98 @@
 
 ---
 
-## 🔲 To Do
+### Mobile — Transactions (HomeScreen)
+- [x] `useTransactions`, `useCreateTransaction` hooks
+- [x] HomeScreen with real data (accounts, transactions, total balance)
+- [x] Pull-to-refresh on HomeScreen (accounts + transactions + profile in parallel)
+- [x] Empty state for transactions (icon + message)
+- [x] Transaction form bottom sheet (type toggle, amount, account picker, category picker, date, payee, notes)
+- [x] Category picker: parent chips (horizontal scroll) → subcategory chips expand below on tap
+- [x] Transfer form: From/To account pickers (mutually exclusive)
+- [x] Guard: alert if no accounts exist when opening transaction form
+- [x] `TransactionItem` component: Ionicons type icon, signed amount, formatted date
 
-> Ordered by priority — core features first.
+---
+
+## 🔲 Backlog
+
+> Items in the current sprint are tracked above. Everything below is ordered by priority.
 
 ### Phase 2 — Core Financial Engine
 
-#### Category Picker (Mobile)
-- [ ] Mobile: Category picker component (reusable bottom sheet for transaction form)
+#### Transactions (Mobile) — polish `[P2]`
+- [ ] `TransactionListScreen` — paginated list, filterable by account/category/type/date
+- [ ] Edit / delete transaction (tap → detail/edit sheet)
 
-#### Transactions (Mobile) — depends on API done above
-- [ ] Mobile: `useTransactions`, `useCreateTransaction`, `useUpdateTransaction`, `useDeleteTransaction` hooks
-- [ ] Mobile: TransactionListScreen (paginated, filterable)
-- [ ] Mobile: Transaction form (quick-add FAB + full form)
-- [ ] Mobile: HomeScreen with real data (replace mock data)
-
-#### Account Balances (API)
-- [ ] Balance calculation: `initialBalance + SUM(transactions)` per account
-- [ ] Include current balance in `GET /api/v1/accounts` and `GET /api/v1/accounts/:id` responses
+#### Tags (Mobile) `[P2]`
+- [ ] Tag autocomplete chips in transaction form (create-on-type + select existing)
 
 ### Phase 3 — Smart Data Entry
 
-#### Recurring Payments
-- [ ] DB schema: `recurring_rule` table
-- [ ] `POST /api/v1/recurring` — create rule
-- [ ] `GET /api/v1/recurring` — list rules
-- [ ] `PATCH /api/v1/recurring/:id` — update, pause/resume
-- [ ] `DELETE /api/v1/recurring/:id`
-- [ ] Scheduled job: daily generation of due transactions (auto-post + pending)
-- [ ] Tests: service-level tests for generation logic
-- [ ] Mobile: RecurringScreen (list upcoming + manage rules)
-- [ ] Mobile: Pending review queue (confirm/adjust pending transactions)
+#### Recurring Payments `[P1 API · P2 Mobile]`
+- [ ] DB schema: `recurring_rule` table `[P1]`
+- [ ] `POST/GET/PATCH/DELETE /api/v1/recurring` + pause/resume `[P1]`
+- [ ] Scheduled job: daily generation of due transactions `[P1]`
+- [ ] Tests: service-level generation logic `[P1]`
+- [ ] Mobile: `RecurringScreen` (list + create/edit sheet + pause/resume) `[P2]`
+- [ ] Mobile: Pending review queue `[P2]`
 
-#### Receipt Scanning
-- [ ] S3 pre-signed URL endpoint: `POST /api/v1/receipts/upload-url`
-- [ ] AI extraction endpoint: `POST /api/v1/receipts/extract`
-- [ ] Mobile: Camera capture (expo-camera or react-native-vision-camera)
-- [ ] Mobile: Receipt review form (pre-filled, editable before save)
-- [ ] Mobile: Scan tab wired up (replaces ScanPlaceholderScreen)
+#### Receipt Scanning `[P1 API · P2 Mobile]`
+- [ ] `POST /api/v1/receipts/upload-url` — S3 pre-signed URL `[P1]`
+- [ ] `POST /api/v1/receipts/extract` — AI OCR pipeline `[P1]`
+- [ ] Mobile: Camera capture (expo-camera / react-native-vision-camera) `[P2]`
+- [ ] Mobile: Receipt review form (pre-filled, editable before save) `[P2]`
+- [ ] Mobile: Scan tab wired up `[P2]`
 
 ### Phase 4 — Import & Sharing
 
-#### Bank Statement Import (PDF)
-- [ ] PDF upload + parsing endpoint
-- [ ] Transaction matching logic (amount + date + description similarity)
-- [ ] Import review UI (grouped: matched / missing / extra)
-- [ ] Bulk-add missing transactions
+#### Bank Statement Import `[P1 API · P2 Mobile]`
+- [ ] PDF upload + parsing endpoint `[P1]`
+- [ ] Transaction matching logic (amount + date + description similarity) `[P1]`
+- [ ] Mobile: Import review UI (matched / missing / extra) `[P2]`
+- [ ] Mobile: Bulk-add missing transactions `[P2]`
 
-#### Account Sharing
-- [ ] Invite link generation + validation
-- [ ] Permission levels: read-only / read-write
-- [ ] Revoke access
-- [ ] Mobile: Shared accounts section
+#### Account Sharing `[P1 API · P2 Mobile]`
+- [ ] Invite link generation + validation `[P1]`
+- [ ] Permission levels: read-only / read-write `[P1]`
+- [ ] Revoke access `[P1]`
+- [ ] Mobile: Shared accounts section `[P2]`
 
 ### Phase 5 — Insights & Engagement
 
-#### Dashboard (real data)
-- [ ] Net worth calculation (assets minus liabilities)
-- [ ] Monthly income vs. expenses summary
+#### Reports `[P1 API · P2 Mobile]`
+- [ ] `GET /api/v1/reports/income-expenses` `[P1]`
+- [ ] `GET /api/v1/reports/spending-by-category` `[P1]`
+- [ ] `GET /api/v1/reports/account-summary` `[P1]`
+- [ ] Mobile: AnalyticsScreen with charts `[P2]`
+
+#### Budgets `[P1 API · P2 Mobile]`
+- [ ] DB schema: `budget`, `budget_period` tables `[P1]`
+- [ ] `POST/GET/PATCH/DELETE /api/v1/budgets` + rollover logic `[P1]`
+- [ ] Tests: service-level rollover tests `[P1]`
+- [ ] Mobile: BudgetScreen (overview + create/edit) `[P2]`
+
+#### Dashboard enhancements `[P2]`
+- [ ] Net worth calculation display
+- [ ] Monthly income vs. expenses summary card
 - [ ] Upcoming recurring payments (next 7 days)
-- [ ] Pending review count
-- [ ] Recent transactions list
+- [ ] Pending review count badge
 
-#### Reports
-- [ ] `GET /api/v1/reports/income-expenses` — monthly income vs. expenses for the year
-- [ ] `GET /api/v1/reports/spending-by-category` — totals per category for a period
-- [ ] `GET /api/v1/reports/account-summary` — current balance per account
-- [ ] Mobile: AnalyticsScreen with charts (replace AnalyticsPlaceholderScreen)
+#### Push Notifications `[P1 API · P2 Mobile]`
+- [ ] DB schema: `device_token` table `[P1]`
+- [ ] `POST /api/v1/notifications/register` `[P1]`
+- [ ] Notification dispatch (recurring due, budget 80%/100%, receipt processed) `[P1]`
+- [ ] Mobile: expo-notifications setup + permission request `[P2]`
+- [ ] Mobile: Notification settings screen `[P2]`
 
-#### Budgets
-- [ ] DB schema: `budget`, `budget_period` tables
-- [ ] `POST /api/v1/budgets`, `GET`, `PATCH`, `DELETE`
-- [ ] Budget period auto-creation and rollover logic
-- [ ] Tests: service-level tests for rollover calculations
-- [ ] Mobile: BudgetScreen (overview + create/edit budgets)
+### Phase 6 — Monetization `[P1 API · P2 Mobile]`
 
-#### Push Notifications
-- [ ] DB schema: `device_token` table
-- [ ] `POST /api/v1/notifications/register` — register device token
-- [ ] Notification dispatch for: recurring due, budget 80%/100%, receipt/statement processed
-- [ ] Mobile: expo-notifications setup + permission request
-- [ ] Mobile: Notification settings screen
-
-### Phase 6 — Monetization
-
-- [ ] Stripe integration (subscription management)
-- [ ] Tier middleware (`free` / `premium` checks on relevant endpoints)
-- [ ] Free tier limits enforcement (2 accounts, 100 tx/month, 5 receipt scans)
-- [ ] In-app purchase flow (iOS + Android)
-- [ ] Upgrade prompt UI for locked features
-- [ ] Settings screen: manage subscription
+- [ ] Stripe integration (subscription management) `[P1]`
+- [ ] Tier middleware (`free` / `premium` checks) `[P1]`
+- [ ] Free tier limits (2 accounts, 100 tx/month, 5 receipt scans) `[P1]`
+- [ ] Mobile: In-app purchase flow (iOS + Android) `[P2]`
+- [ ] Mobile: Upgrade prompt UI for locked features `[P2]`
+- [ ] Mobile: Settings screen — manage subscription `[P2]`
 
 ---
 
