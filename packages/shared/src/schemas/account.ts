@@ -35,6 +35,8 @@ export const accountResponseSchema = z.object({
   type: z.enum(ACCOUNT_TYPES),
   currency: z.enum(CURRENCIES),
   initialBalance: z.number().int(),
+  // Running balance = initialBalance + SUM(transaction amounts)
+  balance: z.number().int(),
   color: z.string().nullable(),
   icon: z.string().nullable(),
   status: z.enum(ACCOUNT_STATUSES),

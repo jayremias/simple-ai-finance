@@ -431,3 +431,65 @@ describe('DELETE /api/v1/accounts/:id', () => {
     expect(getRes.status).toBe(403); // no longer accessible
   });
 });
+
+// ---------------------------------------------------------------------------
+// Balance calculation
+// ---------------------------------------------------------------------------
+
+describe('balance calculation', () => {
+  test('balance equals initialBalance when no transactions', async () => {
+    const { token } = await createAuthenticatedUserWithOrg();
+    const res = await app.request('/api/v1/accounts', {
+      method: 'POST',
+      headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...VALID_ACCOUNT, initial_balance: 50000 }),
+    });
+    const account = (await res.json()) as AccountResponse;
+    expect(account.balance).toBe(50000);
+  });
+
+  test('balance reflects transactions', async () => {
+    const { token } = await createAuthenticatedUserWithOrg();
+    const createRes = await app.request('/api/v1/accounts', {
+      method: 'POST',
+      headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...VALID_ACCOUNT, initial_balance: 100000 }),
+    });
+    const account = (await createRes.json()) as AccountResponse;
+
+    // Add an expense (-3000) and income (+5000)
+    await app.request('/api/v1/transactions', {
+      method: 'POST',
+      headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accountId: account.teamId,
+        type: 'expense',
+        amount: 3000,
+        date: '2024-01-01',
+      }),
+    });
+    await app.request('/api/v1/transactions', {
+      method: 'POST',
+      headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accountId: account.teamId,
+        type: 'income',
+        amount: 5000,
+        date: '2024-01-02',
+      }),
+    });
+
+    // balance = 100000 - 3000 + 5000 = 102000
+    const listRes = await app.request('/api/v1/accounts', { headers: bearerHeader(token) });
+    const accounts = (await listRes.json()) as AccountResponse[];
+    const updated = accounts.find((a) => a.id === account.id)!;
+    expect(updated.balance).toBe(102000);
+
+    // GET /accounts/:id also reflects it
+    const singleRes = await app.request(`/api/v1/accounts/${account.id}`, {
+      headers: bearerHeader(token),
+    });
+    const single = (await singleRes.json()) as AccountResponse;
+    expect(single.balance).toBe(102000);
+  });
+});

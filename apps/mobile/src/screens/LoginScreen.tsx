@@ -1,3 +1,5 @@
+import { CURRENCIES, SUPPORTED_LOCALES } from '@moneylens/shared';
+import { getLocales } from 'expo-localization';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { api } from '@/services/api';
 import { authService } from '@/services/auth';
 import { storage } from '@/services/storage';
 import { useAuthStore } from '@/stores/auth';
@@ -27,6 +30,7 @@ export function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [currency, setCurrency] = useState<(typeof CURRENCIES)[number]>('USD');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -37,6 +41,7 @@ export function LoginScreen() {
     setEmail('');
     setPassword('');
     setConfirmPassword('');
+    setCurrency('USD');
   }
 
   async function handleSubmit() {
@@ -66,6 +71,13 @@ export function LoginScreen() {
           ? await authService.signIn(email.trim(), password)
           : await authService.signUp(name.trim(), email.trim(), password);
       await storage.setToken(result.token);
+      if (mode === 'register') {
+        const deviceLocale = getLocales()[0]?.languageTag ?? 'en-US';
+        const locale = (SUPPORTED_LOCALES as readonly string[]).includes(deviceLocale)
+          ? (deviceLocale as (typeof SUPPORTED_LOCALES)[number])
+          : 'en-US';
+        api.patch('/users/me', { defaultCurrency: currency, locale }).catch(() => null);
+      }
       setAuth(result.token, result.user);
     } catch (err) {
       const axiosErr = err as { response?: { status?: number; data?: unknown } };
@@ -152,6 +164,25 @@ export function LoginScreen() {
             />
           )}
 
+          {!isSignIn && (
+            <View style={styles.currencyRow}>
+              <Text style={styles.currencyLabel}>Currency</Text>
+              <View style={styles.chips}>
+                {CURRENCIES.map((c) => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[styles.chip, currency === c && styles.chipActive]}
+                    onPress={() => setCurrency(c)}
+                  >
+                    <Text style={[styles.chipText, currency === c && styles.chipTextActive]}>
+                      {c}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <TouchableOpacity
@@ -229,6 +260,38 @@ const styles = StyleSheet.create({
   error: {
     color: Colors.danger,
     fontSize: 14,
+  },
+  currencyRow: {
+    gap: 8,
+  },
+  currencyLabel: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  chips: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.cardBg,
+  },
+  chipActive: {
+    backgroundColor: Colors.brandBlue,
+    borderColor: Colors.brandBlue,
+  },
+  chipText: {
+    color: Colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  chipTextActive: {
+    color: Colors.textPrimary,
   },
   button: {
     backgroundColor: Colors.brandBlue,

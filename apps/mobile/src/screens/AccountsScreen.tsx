@@ -7,6 +7,7 @@ import {
   FlatList,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,6 +22,7 @@ import {
   useDeleteAccount,
   useUpdateAccount,
 } from '@/hooks/useAccounts';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { Colors } from '@/theme/colors';
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
@@ -61,9 +63,7 @@ function AccountCard({ account, onPress }: { account: AccountResponse; onPress: 
         <Text style={styles.cardType}>{ACCOUNT_TYPE_LABELS[account.type] ?? account.type}</Text>
       </View>
       <View style={styles.cardRight}>
-        <Text style={styles.cardBalance}>
-          {formatBalance(account.initialBalance, account.currency)}
-        </Text>
+        <Text style={styles.cardBalance}>{formatBalance(account.balance, account.currency)}</Text>
         <Text style={styles.cardCurrency}>{account.currency}</Text>
       </View>
     </TouchableOpacity>
@@ -93,16 +93,18 @@ function AccountFormSheet({
 }) {
   const isEdit = account !== null;
 
+  const { data: profile } = useUserProfile();
   const { mutate: createAccount, isPending: isCreating } = useCreateAccount();
   const { mutate: updateAccount, isPending: isUpdating } = useUpdateAccount();
   const { mutate: deleteAccount, isPending: isDeleting } = useDeleteAccount();
 
   const isPending = isCreating || isUpdating || isDeleting;
+  const defaultCurrency = account?.currency ?? profile?.defaultCurrency ?? 'USD';
 
   const defaultForm: FormState = {
     name: account?.name ?? '',
     type: account?.type ?? 'checking',
-    currency: account?.currency ?? 'USD',
+    currency: defaultCurrency,
     initialBalance: account ? String(account.initialBalance / 100) : '',
     color: account?.color ?? ACCOUNT_COLORS[0] ?? '#2B7EFF',
   };
@@ -115,7 +117,7 @@ function AccountFormSheet({
     setForm({
       name: account?.name ?? '',
       type: account?.type ?? 'checking',
-      currency: account?.currency ?? 'USD',
+      currency: account?.currency ?? profile?.defaultCurrency ?? 'USD',
       initialBalance: account ? String(account.initialBalance / 100) : '',
       color: account?.color ?? ACCOUNT_COLORS[0] ?? '#2B7EFF',
     });
@@ -310,9 +312,16 @@ function AccountFormSheet({
 
 export function AccountsScreen() {
   const insets = useSafeAreaInsets();
-  const { data: accounts, isLoading, error } = useAccounts();
+  const { data: accounts, isLoading, error, refetch } = useAccounts();
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<AccountResponse | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }
 
   function openCreate() {
     setSelectedAccount(null);
@@ -343,6 +352,13 @@ export function AccountsScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <AccountCard account={item} onPress={() => openEdit(item)} />}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={Colors.brandBlue}
+            />
+          }
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>No accounts yet</Text>

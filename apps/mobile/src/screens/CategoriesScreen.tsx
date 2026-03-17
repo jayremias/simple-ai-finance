@@ -8,6 +8,7 @@ import {
   FlatList,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -580,8 +581,15 @@ function CategoryFormSheet({
 
 export function CategoriesScreen() {
   const insets = useSafeAreaInsets();
-  const { data: categories, isLoading, error } = useCategories();
+  const { data: categories, isLoading, error, refetch } = useCategories();
+  const [refreshing, setRefreshing] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }
   const [sheetVisible, setSheetVisible] = useState(false);
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
 
@@ -676,6 +684,13 @@ export function CategoriesScreen() {
             );
           }}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={Colors.brandBlue}
+            />
+          }
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons name="pricetags-outline" size={48} color={Colors.textMuted} />

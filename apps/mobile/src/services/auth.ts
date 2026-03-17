@@ -4,7 +4,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 const authClient = axios.create({
   baseURL: `${API_BASE_URL}/api/auth`,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'application/json', 'expo-origin': 'moneylens://' },
 });
 
 export interface AuthUser {

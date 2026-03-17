@@ -1,10 +1,14 @@
+import { expo } from '@better-auth/expo';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { admin, bearer, organization } from 'better-auth/plugins';
 import { eq } from 'drizzle-orm';
 import { env as rootEnv } from '@/env';
 import { db } from '@/lib/db';
-import { member as memberTable } from '@/lib/db/schema/organization';
+import {
+  member as memberTable,
+  organization as organizationTable,
+} from '@/lib/db/schema/organization';
 import { sendEmail } from '@/lib/email';
 import { env } from './env';
 import { ac, editor, owner, viewer } from './permissions';
@@ -19,7 +23,14 @@ export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
   basePath: '/api/auth',
   secret: env.BETTER_AUTH_SECRET,
-  trustedOrigins: parseTrustedOrigins(rootEnv.CORS_ORIGINS),
+  trustedOrigins: [
+    ...parseTrustedOrigins(rootEnv.CORS_ORIGINS),
+    // React Native / Expo — no Origin header on native requests
+    'exp://',
+    'exp://**',
+    'moneylens://',
+    'moneylens://**',
+  ],
 
   database: drizzleAdapter(db, {
     provider: 'pg',
@@ -99,15 +110,24 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
-          const org = await auth.api.createOrganization({
-            body: {
-              name: 'Personal',
-              slug: `personal-${user.id}`,
-              userId: user.id,
-            },
+          // Insert org + member directly — bypasses Better Auth's HTTP layer
+          // (which would fail CSRF checks for server-side calls without Origin).
+          const orgId = crypto.randomUUID();
+          await db.insert(organizationTable).values({
+            id: orgId,
+            name: 'Personal',
+            slug: `personal-${user.id}`,
+            createdAt: new Date(),
+          });
+          await db.insert(memberTable).values({
+            id: crypto.randomUUID(),
+            organizationId: orgId,
+            userId: user.id,
+            role: 'owner',
+            createdAt: new Date(),
           });
           const { seedDefaultCategories } = await import('@/services/categories.service');
-          await seedDefaultCategories(org.id);
+          await seedDefaultCategories(orgId);
         },
       },
     },
@@ -139,6 +159,7 @@ export const auth = betterAuth({
   },
 
   plugins: [
+    expo(),
     bearer(),
     admin({
       defaultRole: 'user',

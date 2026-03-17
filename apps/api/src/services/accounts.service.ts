@@ -1,74 +1,94 @@
 import type { CreateAccountInput, UpdateAccountInput } from '@moneylens/shared/types';
-import { and, eq } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { and, eq, inArray, sql, sum } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { financialAccount } from '@/lib/db/schema/financial-account';
 import { member } from '@/lib/db/schema/organization';
 import { team, teamMember } from '@/lib/db/schema/team';
+import { transaction } from '@/lib/db/schema/transaction';
 
 export async function createAccount(
   userId: string,
   organizationId: string,
   data: CreateAccountInput
 ) {
-  // 1. Create team via BA API (external call, cannot be part of DB transaction)
-  const createdTeam = await auth.api.createTeam({
-    body: {
+  const teamId = crypto.randomUUID();
+
+  const [account] = await db.transaction(async (tx) => {
+    // Create the Better Auth team row directly — avoids going through BA's HTTP layer
+    await tx.insert(team).values({
+      id: teamId,
       name: data.name,
       organizationId,
-    },
-  });
-
-  try {
-    // 2-3. Insert team member + financial account in a transaction
-    const [account] = await db.transaction(async (tx) => {
-      await tx.insert(teamMember).values({
-        id: crypto.randomUUID(),
-        teamId: createdTeam.id,
-        userId,
-      });
-
-      return tx
-        .insert(financialAccount)
-        .values({
-          teamId: createdTeam.id,
-          organizationId,
-          name: data.name,
-          type: data.type,
-          currency: data.currency,
-          initialBalance: data.initial_balance,
-          color: data.color ?? null,
-          icon: data.icon ?? null,
-          openedAt: data.opened_at ?? null,
-        })
-        .returning();
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
-    return account;
-  } catch (error) {
-    // Rollback: delete the orphaned team created in step 1
-    await db
-      .delete(team)
-      .where(eq(team.id, createdTeam.id))
-      .catch((cleanupErr) => {
-        console.error('Failed to clean up orphaned team:', createdTeam.id, cleanupErr);
-      });
-    throw error;
-  }
+    await tx.insert(teamMember).values({
+      id: crypto.randomUUID(),
+      teamId,
+      userId,
+      createdAt: new Date(),
+    });
+
+    return tx
+      .insert(financialAccount)
+      .values({
+        teamId,
+        organizationId,
+        name: data.name,
+        type: data.type,
+        currency: data.currency,
+        initialBalance: data.initial_balance,
+        color: data.color ?? null,
+        icon: data.icon ?? null,
+        openedAt: data.opened_at ?? null,
+      })
+      .returning();
+  });
+
+  if (!account) throw new Error('Failed to create financial account');
+  // New account has no transactions yet — balance equals initialBalance
+  return withBalance(account, new Map());
+}
+
+/**
+ * Fetches transaction sums grouped by accountId (= team.id) for a set of teamIds.
+ * Returns a Map<teamId, sumCents>.
+ */
+async function fetchTxSums(teamIds: string[]): Promise<Map<string, number>> {
+  if (teamIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      accountId: transaction.accountId,
+      txSum: sql<string>`coalesce(${sum(transaction.amount)}, 0)`,
+    })
+    .from(transaction)
+    .where(inArray(transaction.accountId, teamIds))
+    .groupBy(transaction.accountId);
+
+  return new Map(rows.map((r) => [r.accountId, Number(r.txSum)]));
+}
+
+function withBalance<T extends { teamId: string; initialBalance: number }>(
+  account: T,
+  txSums: Map<string, number>
+) {
+  return { ...account, balance: account.initialBalance + (txSums.get(account.teamId) ?? 0) };
 }
 
 export async function listAccountsByOrg(organizationId: string, status?: string) {
   const conditions = [eq(financialAccount.organizationId, organizationId)];
+  if (status) conditions.push(eq(financialAccount.status, status));
 
-  if (status) {
-    conditions.push(eq(financialAccount.status, status));
-  }
-
-  return db
+  const accounts = await db
     .select()
     .from(financialAccount)
     .where(and(...conditions))
     .orderBy(financialAccount.sortOrder);
+
+  const txSums = await fetchTxSums(accounts.map((a) => a.teamId));
+  return accounts.map((a) => withBalance(a, txSums));
 }
 
 export async function getAccountById(accountId: string) {
@@ -78,7 +98,10 @@ export async function getAccountById(accountId: string) {
     .where(eq(financialAccount.id, accountId))
     .limit(1);
 
-  return account ?? null;
+  if (!account) return null;
+
+  const txSums = await fetchTxSums([account.teamId]);
+  return withBalance(account, txSums);
 }
 
 export async function updateAccount(accountId: string, data: UpdateAccountInput) {
@@ -102,15 +125,18 @@ export async function updateAccount(accountId: string, data: UpdateAccountInput)
     .where(eq(financialAccount.id, accountId))
     .returning();
 
+  if (!updated) return null;
+
   // If name changed, sync the BA team name
-  if (data.name && updated) {
+  if (data.name) {
     await db
       .update(team)
       .set({ name: data.name, updatedAt: new Date() })
       .where(eq(team.id, updated.teamId));
   }
 
-  return updated ?? null;
+  const txSums = await fetchTxSums([updated.teamId]);
+  return withBalance(updated, txSums);
 }
 
 export async function deleteAccount(accountId: string) {
