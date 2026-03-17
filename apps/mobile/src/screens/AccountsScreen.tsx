@@ -22,6 +22,7 @@ import {
   useDeleteAccount,
   useUpdateAccount,
 } from '@/hooks/useAccounts';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { Colors } from '@/theme/colors';
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
@@ -92,16 +93,18 @@ function AccountFormSheet({
 }) {
   const isEdit = account !== null;
 
+  const { data: profile } = useUserProfile();
   const { mutate: createAccount, isPending: isCreating } = useCreateAccount();
   const { mutate: updateAccount, isPending: isUpdating } = useUpdateAccount();
   const { mutate: deleteAccount, isPending: isDeleting } = useDeleteAccount();
 
   const isPending = isCreating || isUpdating || isDeleting;
+  const defaultCurrency = account?.currency ?? profile?.defaultCurrency ?? 'USD';
 
   const defaultForm: FormState = {
     name: account?.name ?? '',
     type: account?.type ?? 'checking',
-    currency: account?.currency ?? 'USD',
+    currency: defaultCurrency,
     initialBalance: account ? String(account.initialBalance / 100) : '',
     color: account?.color ?? ACCOUNT_COLORS[0] ?? '#2B7EFF',
   };
@@ -114,7 +117,7 @@ function AccountFormSheet({
     setForm({
       name: account?.name ?? '',
       type: account?.type ?? 'checking',
-      currency: account?.currency ?? 'USD',
+      currency: account?.currency ?? profile?.defaultCurrency ?? 'USD',
       initialBalance: account ? String(account.initialBalance / 100) : '',
       color: account?.color ?? ACCOUNT_COLORS[0] ?? '#2B7EFF',
     });
