@@ -7,9 +7,8 @@ import { CategoryFilter } from '../components/analysis/CategoryFilter';
 import { PeriodToggle } from '../components/analysis/PeriodToggle';
 import { WeeklyBarChart } from '../components/charts/WeeklyBarChart';
 import { AppHeader } from '../components/common/AppHeader';
-import { TransactionItem } from '../components/common/TransactionItem';
 import type { WeeklyData } from '../types';
-import { mockTransactions, mockWeeklyData } from '../utils/mockData';
+import { mockWeeklyData } from '../utils/mockData';
 
 type Period = 'Day' | 'Week' | 'Month';
 
@@ -55,9 +54,6 @@ export function WeeklyAnalysisScreen() {
 
         <View style={styles.transactionsSection}>
           <Text style={styles.monthLabel}>June</Text>
-          {mockTransactions.map((t) => (
-            <TransactionItem key={t.id} transaction={t} showPaymentMethod />
-          ))}
         </View>
       </ScrollView>
     </View>

@@ -10,3 +10,15 @@ export type {
   CreateCategoryInput,
   UpdateCategoryInput,
 } from './category';
+
+export type { CreateTagInput, TagResponse } from './tag';
+
+export type {
+  CreateTransactionInput,
+  ListTransactionsInput,
+  ParsedTransactionItem,
+  ParseTransactionsResponse,
+  TransactionListResponse,
+  TransactionResponse,
+  UpdateTransactionInput,
+} from './transaction';

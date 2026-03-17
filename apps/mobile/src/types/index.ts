@@ -1,14 +1,3 @@
-export interface Transaction {
-  id: string;
-  name: string;
-  date: string;
-  amount: number;
-  category: string;
-  paymentMethod?: string;
-  icon?: string;
-  iconBg?: string;
-}
-
 export interface WeeklyData {
   day: string;
   amount: number;
