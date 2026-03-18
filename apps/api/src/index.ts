@@ -56,9 +56,6 @@ app.route('/', api);
 export { app };
 
 if (process.env.NODE_ENV !== 'test') {
-  import('@/jobs/generate-recurring').then(({ scheduleRecurringGeneration }) => {
-    scheduleRecurringGeneration();
-  });
   console.log(`MoneyLens API running on port ${env.PORT}`);
 }
 
