@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import type { AccountResponse, CategoryTreeResponse } from '@moneylens/shared';
+import type { AccountResponse, CategoryTreeResponse, TransactionResponse } from '@moneylens/shared';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -24,7 +24,12 @@ import { FeedAISection } from '../components/home/FeedAISection';
 import { HomeHeader } from '../components/home/HomeHeader';
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
-import { useCreateTransaction, useTransactions } from '../hooks/useTransactions';
+import {
+  useCreateTransaction,
+  useDeleteTransaction,
+  useTransactions,
+  useUpdateTransaction,
+} from '../hooks/useTransactions';
 import { useUserProfile } from '../hooks/useUserProfile';
 import type { RootStackParamList } from '../types';
 
@@ -190,6 +195,234 @@ function CategoryPicker({
         </ScrollView>
       )}
     </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Transaction edit/delete sheet
+// ---------------------------------------------------------------------------
+
+type EditFormState = {
+  amount: string;
+  categoryId: string;
+  date: string;
+  payee: string;
+  notes: string;
+};
+
+function TransactionEditSheet({
+  transaction,
+  onClose,
+}: {
+  transaction: TransactionResponse | null;
+  onClose: () => void;
+}) {
+  const { data: categories = [] } = useCategories();
+  const { mutate: updateTransaction, isPending: isUpdating } = useUpdateTransaction();
+  const { mutate: deleteTransaction, isPending: isDeleting } = useDeleteTransaction();
+
+  const isPending = isUpdating || isDeleting;
+
+  const [form, setForm] = useState<EditFormState>({
+    amount: '',
+    categoryId: '',
+    date: '',
+    payee: '',
+    notes: '',
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    if (!transaction) {
+      setIsReady(false);
+      return;
+    }
+    setForm({
+      amount: String(Math.abs(transaction.amount) / 100),
+      categoryId: transaction.categoryId ?? '',
+      date: transaction.date,
+      payee: transaction.payee ?? '',
+      notes: transaction.notes ?? '',
+    });
+    setError(null);
+    setIsReady(true);
+  }, [transaction]);
+
+  function handleClose() {
+    setError(null);
+    onClose();
+  }
+
+  function set<K extends keyof EditFormState>(key: K, value: EditFormState[K]) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function handleSave() {
+    const amountNum = parseFloat(form.amount);
+    if (!form.amount || Number.isNaN(amountNum) || amountNum <= 0) {
+      setError('Enter a valid amount.');
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) {
+      setError('Date must be YYYY-MM-DD.');
+      return;
+    }
+    if (!transaction) return;
+    setError(null);
+
+    updateTransaction(
+      {
+        id: transaction.id,
+        data: {
+          amount: Math.round(amountNum * 100),
+          categoryId: form.categoryId || null,
+          date: form.date,
+          payee: form.payee.trim() || null,
+          notes: form.notes.trim() || null,
+        },
+      },
+      {
+        onSuccess: handleClose,
+        onError: () => setError('Failed to save changes. Please try again.'),
+      }
+    );
+  }
+
+  function handleDelete() {
+    if (!transaction) return;
+    Alert.alert('Delete Transaction', 'Delete this transaction? This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () =>
+          deleteTransaction(transaction.id, {
+            onSuccess: handleClose,
+            onError: () => setError('Failed to delete. Please try again.'),
+          }),
+      },
+    ]);
+  }
+
+  const accentColor = transaction
+    ? (TYPE_COLOR[transaction.type as TxType] ?? Colors.brandBlue)
+    : Colors.brandBlue;
+  const typeLabel = transaction
+    ? (TYPE_LABELS.find((t) => t.value === transaction.type)?.label ?? transaction.type)
+    : '';
+
+  return (
+    <Modal
+      visible={transaction !== null}
+      animationType="slide"
+      transparent
+      onRequestClose={handleClose}
+    >
+      <Pressable style={sheetStyles.overlay} onPress={handleClose} />
+      <View style={sheetStyles.sheet}>
+        <View style={sheetStyles.handle} />
+
+        {/* Header */}
+        <View style={editSheetStyles.header}>
+          <View style={[editSheetStyles.typeBadge, { backgroundColor: `${accentColor}22` }]}>
+            <Text style={[editSheetStyles.typeBadgeText, { color: accentColor }]}>{typeLabel}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={handleDelete}
+            disabled={isPending}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={editSheetStyles.deleteLink}>Delete</Text>
+          </TouchableOpacity>
+        </View>
+
+        {!isReady ? (
+          <View style={editSheetStyles.skeleton}>
+            <View style={editSheetStyles.skeletonAmount} />
+            <View style={editSheetStyles.skeletonLabel} />
+            <View style={editSheetStyles.skeletonField} />
+            <View style={editSheetStyles.skeletonLabel} />
+            <View style={editSheetStyles.skeletonField} />
+            <View style={editSheetStyles.skeletonLabel} />
+            <View style={editSheetStyles.skeletonField} />
+          </View>
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {/* Amount */}
+            <TextInput
+              style={[sheetStyles.amountInput, { color: accentColor }]}
+              value={form.amount}
+              onChangeText={(v) => set('amount', v)}
+              placeholder="0.00"
+              placeholderTextColor={Colors.textMuted}
+              keyboardType="decimal-pad"
+            />
+
+            {/* Category (expense / income only) */}
+            {transaction?.type !== 'transfer' && (
+              <>
+                <Text style={sheetStyles.label}>Category (optional)</Text>
+                <CategoryPicker
+                  categories={categories}
+                  selected={form.categoryId}
+                  onSelect={(id) => set('categoryId', id)}
+                />
+              </>
+            )}
+
+            {/* Date */}
+            <Text style={sheetStyles.label}>Date</Text>
+            <TextInput
+              style={sheetStyles.input}
+              value={form.date}
+              onChangeText={(v) => set('date', v)}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={Colors.textMuted}
+            />
+
+            {/* Payee */}
+            <Text style={sheetStyles.label}>Payee (optional)</Text>
+            <TextInput
+              style={sheetStyles.input}
+              value={form.payee}
+              onChangeText={(v) => set('payee', v)}
+              placeholder="e.g. Starbucks"
+              placeholderTextColor={Colors.textMuted}
+            />
+
+            {/* Notes */}
+            <Text style={sheetStyles.label}>Notes (optional)</Text>
+            <TextInput
+              style={[sheetStyles.input, sheetStyles.notesInput]}
+              value={form.notes}
+              onChangeText={(v) => set('notes', v)}
+              placeholder="Add a note…"
+              placeholderTextColor={Colors.textMuted}
+              multiline
+            />
+
+            {error ? <Text style={sheetStyles.error}>{error}</Text> : null}
+
+            <TouchableOpacity
+              style={[
+                sheetStyles.submitBtn,
+                { backgroundColor: accentColor },
+                isPending && sheetStyles.submitBtnDisabled,
+              ]}
+              onPress={handleSave}
+              disabled={isPending}
+            >
+              {isUpdating ? (
+                <ActivityIndicator color={Colors.textPrimary} size="small" />
+              ) : (
+                <Text style={sheetStyles.submitText}>Save Changes</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        )}
+      </View>
+    </Modal>
   );
 }
 
@@ -422,6 +655,7 @@ export function HomeScreen() {
   const { data: accountsData, refetch: refetchAccounts } = useAccounts();
   const { data: transactionsData, refetch: refetchTransactions } = useTransactions({ limit: 10 });
   const [formVisible, setFormVisible] = useState(false);
+  const [editTransaction, setEditTransaction] = useState<TransactionResponse | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   async function onRefresh() {
@@ -501,7 +735,13 @@ export function HomeScreen() {
               </Text>
             </View>
           ) : (
-            transactions.map((tx) => <TransactionItem key={tx.id} transaction={tx} />)
+            transactions.map((tx) => (
+              <TransactionItem
+                key={tx.id}
+                transaction={tx}
+                onPress={() => setEditTransaction(tx)}
+              />
+            ))
           )}
         </View>
 
@@ -512,6 +752,11 @@ export function HomeScreen() {
         visible={formVisible}
         accounts={accounts}
         onClose={() => setFormVisible(false)}
+      />
+
+      <TransactionEditSheet
+        transaction={editTransaction}
+        onClose={() => setEditTransaction(null)}
       />
     </View>
   );
@@ -627,4 +872,48 @@ const sheetStyles = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.6 },
   submitText: { color: Colors.textPrimary, fontSize: 16, fontWeight: '600' },
+});
+
+const editSheetStyles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  typeBadge: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  typeBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  deleteLink: {
+    color: Colors.danger,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  skeleton: {
+    paddingTop: 8,
+    gap: 12,
+  },
+  skeletonAmount: {
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: Colors.surfaceBg,
+    marginBottom: 8,
+  },
+  skeletonLabel: {
+    height: 12,
+    width: 80,
+    borderRadius: 6,
+    backgroundColor: Colors.surfaceBg,
+  },
+  skeletonField: {
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.surfaceBg,
+  },
 });

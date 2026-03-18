@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { CategoryResponse, CategoryTreeResponse } from '@moneylens/shared';
 import { resolveCategoryName } from '@moneylens/shared';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -367,34 +367,32 @@ function CategoryFormSheet({
 
   const isPending = isCreating || isUpdating || isDeleting;
   const [iconExpanded, setIconExpanded] = useState(false);
-
-  function defaultForm(): FormState {
-    if (!target) return { name: '', icon: FALLBACK_ICON, color: CATEGORY_COLORS[0] ?? '#2B7EFF' };
-    if (target.mode === 'editParent') {
-      return {
-        name: target.cat.name,
-        icon: getCategoryIcon(target.cat),
-        color: target.cat.color ?? CATEGORY_COLORS[0] ?? '#2B7EFF',
-      };
-    }
-    if (target.mode === 'editChild') {
-      return {
-        name: target.cat.name,
-        icon: getCategoryIcon(target.cat),
-        color: target.cat.color ?? CATEGORY_COLORS[0] ?? '#2B7EFF',
-      };
-    }
-    return { name: '', icon: FALLBACK_ICON, color: CATEGORY_COLORS[0] ?? '#2B7EFF' };
-  }
-
-  const [form, setForm] = useState<FormState>(defaultForm);
+  const [form, setForm] = useState<FormState>({
+    name: '',
+    icon: FALLBACK_ICON,
+    color: CATEGORY_COLORS[0] ?? '#2B7EFF',
+  });
   const [error, setError] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
-  function handleOpen() {
-    setForm(defaultForm());
+  useEffect(() => {
+    if (!visible) {
+      setIsReady(false);
+      return;
+    }
+    if (target?.mode === 'editParent' || target?.mode === 'editChild') {
+      setForm({
+        name: target.cat.name,
+        icon: getCategoryIcon(target.cat),
+        color: target.cat.color ?? CATEGORY_COLORS[0] ?? '#2B7EFF',
+      });
+    } else {
+      setForm({ name: '', icon: FALLBACK_ICON, color: CATEGORY_COLORS[0] ?? '#2B7EFF' });
+    }
     setError(null);
     setIconExpanded(false);
-  }
+    setIsReady(true);
+  }, [visible, target]);
 
   function handleClose() {
     setError(null);
@@ -462,13 +460,7 @@ function CategoryFormSheet({
           : 'Edit Subcategory';
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={handleClose}
-      onShow={handleOpen}
-    >
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
       <Pressable style={styles.overlay} onPress={handleClose} />
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -485,91 +477,111 @@ function CategoryFormSheet({
           )}
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <Text style={styles.label}>Name</Text>
-          <TextInput
-            style={styles.input}
-            value={form.name}
-            onChangeText={(v) => setForm((f) => ({ ...f, name: v }))}
-            placeholder="e.g. Food & Dining"
-            placeholderTextColor={Colors.textMuted}
-          />
-
-          <Text style={styles.label}>Icon</Text>
-          {iconExpanded ? (
-            <IconExpandedPicker
-              selected={form.icon}
-              onSelect={(icon) => setForm((f) => ({ ...f, icon }))}
-              onCollapse={() => setIconExpanded(false)}
-            />
-          ) : (
-            <>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.iconPickerRow}
-              >
-                {QUICK_ICONS.map((name) => (
-                  <TouchableOpacity
-                    key={name}
-                    style={[styles.iconOption, form.icon === name && styles.iconOptionActive]}
-                    onPress={() => setForm((f) => ({ ...f, icon: name }))}
-                  >
-                    <Ionicons
-                      name={name}
-                      size={22}
-                      color={form.icon === name ? Colors.textPrimary : Colors.textSecondary}
-                    />
-                  </TouchableOpacity>
-                ))}
-                <TouchableOpacity
-                  style={styles.moreIconsButton}
-                  onPress={() => setIconExpanded(true)}
-                >
-                  <Ionicons name="ellipsis-horizontal" size={18} color={Colors.textSecondary} />
-                </TouchableOpacity>
-              </ScrollView>
-              {!QUICK_ICONS.includes(form.icon) && (
-                <View style={styles.selectedIconRow}>
-                  <Ionicons name="checkmark-circle" size={14} color={Colors.brandBlue} />
-                  <View style={[styles.selectedIconBadge, { backgroundColor: Colors.surfaceBg }]}>
-                    <Ionicons name={form.icon} size={20} color={Colors.textPrimary} />
-                  </View>
-                  <Text style={styles.selectedIconLabel}>Selected</Text>
-                </View>
-              )}
-            </>
-          )}
-
-          <Text style={styles.label}>Color</Text>
-          <View style={styles.colorRow}>
-            {CATEGORY_COLORS.map((c) => (
-              <TouchableOpacity
-                key={c}
-                style={[
-                  styles.colorSwatch,
-                  { backgroundColor: c },
-                  form.color === c && styles.colorSwatchActive,
-                ]}
-                onPress={() => setForm((f) => ({ ...f, color: c }))}
-              />
-            ))}
+        {!isReady ? (
+          <View style={styles.skeleton}>
+            <View style={styles.skeletonLabel} />
+            <View style={styles.skeletonField} />
+            <View style={styles.skeletonLabel} />
+            <View style={styles.skeletonIconRow}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <View key={i} style={styles.skeletonIcon} />
+              ))}
+            </View>
+            <View style={styles.skeletonLabel} />
+            <View style={styles.skeletonColorRow}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <View key={i} style={styles.skeletonColor} />
+              ))}
+            </View>
+            <View style={styles.skeletonButton} />
           </View>
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={styles.label}>Name</Text>
+            <TextInput
+              style={styles.input}
+              value={form.name}
+              onChangeText={(v) => setForm((f) => ({ ...f, name: v }))}
+              placeholder="e.g. Food & Dining"
+              placeholderTextColor={Colors.textMuted}
+            />
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-          <TouchableOpacity
-            style={[styles.submitButton, isPending && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={isPending}
-          >
-            {isPending && !isDeleting ? (
-              <ActivityIndicator color={Colors.textPrimary} size="small" />
+            <Text style={styles.label}>Icon</Text>
+            {iconExpanded ? (
+              <IconExpandedPicker
+                selected={form.icon}
+                onSelect={(icon) => setForm((f) => ({ ...f, icon }))}
+                onCollapse={() => setIconExpanded(false)}
+              />
             ) : (
-              <Text style={styles.submitText}>{isEdit ? 'Save Changes' : 'Create'}</Text>
+              <>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.iconPickerRow}
+                >
+                  {QUICK_ICONS.map((name) => (
+                    <TouchableOpacity
+                      key={name}
+                      style={[styles.iconOption, form.icon === name && styles.iconOptionActive]}
+                      onPress={() => setForm((f) => ({ ...f, icon: name }))}
+                    >
+                      <Ionicons
+                        name={name}
+                        size={22}
+                        color={form.icon === name ? Colors.textPrimary : Colors.textSecondary}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                  <TouchableOpacity
+                    style={styles.moreIconsButton}
+                    onPress={() => setIconExpanded(true)}
+                  >
+                    <Ionicons name="ellipsis-horizontal" size={18} color={Colors.textSecondary} />
+                  </TouchableOpacity>
+                </ScrollView>
+                {!QUICK_ICONS.includes(form.icon) && (
+                  <View style={styles.selectedIconRow}>
+                    <Ionicons name="checkmark-circle" size={14} color={Colors.brandBlue} />
+                    <View style={[styles.selectedIconBadge, { backgroundColor: Colors.surfaceBg }]}>
+                      <Ionicons name={form.icon} size={20} color={Colors.textPrimary} />
+                    </View>
+                    <Text style={styles.selectedIconLabel}>Selected</Text>
+                  </View>
+                )}
+              </>
             )}
-          </TouchableOpacity>
-        </ScrollView>
+
+            <Text style={styles.label}>Color</Text>
+            <View style={styles.colorRow}>
+              {CATEGORY_COLORS.map((c) => (
+                <TouchableOpacity
+                  key={c}
+                  style={[
+                    styles.colorSwatch,
+                    { backgroundColor: c },
+                    form.color === c && styles.colorSwatchActive,
+                  ]}
+                  onPress={() => setForm((f) => ({ ...f, color: c }))}
+                />
+              ))}
+            </View>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            <TouchableOpacity
+              style={[styles.submitButton, isPending && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={isPending}
+            >
+              {isPending && !isDeleting ? (
+                <ActivityIndicator color={Colors.textPrimary} size="small" />
+              ) : (
+                <Text style={styles.submitText}>{isEdit ? 'Save Changes' : 'Create'}</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        )}
       </View>
     </Modal>
   );
@@ -1017,5 +1029,46 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontSize: 16,
     fontWeight: '600',
+  },
+  skeleton: {
+    gap: 12,
+    paddingTop: 4,
+  },
+  skeletonLabel: {
+    height: 12,
+    width: 80,
+    borderRadius: 6,
+    backgroundColor: Colors.surfaceBg,
+  },
+  skeletonField: {
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.surfaceBg,
+  },
+  skeletonIconRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  skeletonIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: Colors.surfaceBg,
+  },
+  skeletonColorRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  skeletonColor: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.surfaceBg,
+  },
+  skeletonButton: {
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: Colors.surfaceBg,
+    marginTop: 12,
   },
 });
