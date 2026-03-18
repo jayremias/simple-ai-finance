@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { TransactionResponse } from '@moneylens/shared';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '@/theme/colors';
 
 interface TransactionItemProps {
   transaction: TransactionResponse;
+  onPress?: () => void;
 }
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -42,13 +43,13 @@ function formatDate(date: string): string {
   });
 }
 
-export function TransactionItem({ transaction }: TransactionItemProps) {
+export function TransactionItem({ transaction, onPress }: TransactionItemProps) {
   const color = TYPE_COLOR[transaction.type] ?? Colors.brandBlue;
   const icon = TYPE_ICON[transaction.type] ?? 'ellipse-outline';
   const label = transaction.payee ?? transaction.type;
 
-  return (
-    <View style={styles.container}>
+  const content = (
+    <>
       <View style={[styles.iconContainer, { backgroundColor: `${color}22` }]}>
         <Ionicons name={icon} size={22} color={color} />
       </View>
@@ -61,8 +62,18 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
       <Text style={[styles.amount, transaction.amount >= 0 ? styles.positive : styles.negative]}>
         {formatAmount(transaction.amount)}
       </Text>
-    </View>
+    </>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
+        {content}
+      </TouchableOpacity>
+    );
+  }
+
+  return <View style={styles.container}>{content}</View>;
 }
 
 const styles = StyleSheet.create({

@@ -1,6 +1,6 @@
 # MoneyLens — Build Progress
 
-> Last updated: 2026-03-17 (session 3)
+> Last updated: 2026-03-17 (session 4)
 
 ---
 
@@ -38,8 +38,8 @@
 **Owns:** `apps/mobile/` — reads (never writes) `packages/shared/`
 
 #### Transaction Polish (Sprint 1)
-- [ ] `useUpdateTransaction`, `useDeleteTransaction` in `hooks/useTransactions.ts`
-- [ ] `TransactionItem` tappable → edit/delete bottom sheet
+- [x] `useUpdateTransaction`, `useDeleteTransaction` in `hooks/useTransactions.ts`
+- [x] `TransactionItem` tappable → edit/delete bottom sheet
 - [ ] `TransactionListScreen` — paginated list with filter bar (account, type, date range)
 
 #### Tags in Transaction Form (Sprint 1)
@@ -176,7 +176,7 @@
 ---
 
 ### Mobile — Transactions (HomeScreen)
-- [x] `useTransactions`, `useCreateTransaction` hooks
+- [x] `useTransactions`, `useCreateTransaction`, `useUpdateTransaction`, `useDeleteTransaction` hooks
 - [x] HomeScreen with real data (accounts, transactions, total balance)
 - [x] Pull-to-refresh on HomeScreen (accounts + transactions + profile in parallel)
 - [x] Empty state for transactions (icon + message)
@@ -184,7 +184,9 @@
 - [x] Category picker: parent chips (horizontal scroll) → subcategory chips expand below on tap
 - [x] Transfer form: From/To account pickers (mutually exclusive)
 - [x] Guard: alert if no accounts exist when opening transaction form
-- [x] `TransactionItem` component: Ionicons type icon, signed amount, formatted date
+- [x] `TransactionItem` component: Ionicons type icon, signed amount, formatted date, tappable
+- [x] Edit transaction bottom sheet (pre-filled amount, category, date, payee, notes; type badge non-editable)
+- [x] Delete transaction with confirmation alert (cascades both sides of a transfer)
 
 ---
 

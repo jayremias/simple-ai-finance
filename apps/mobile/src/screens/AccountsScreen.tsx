@@ -1,6 +1,6 @@
 import type { AccountResponse } from '@moneylens/shared';
 import { ACCOUNT_TYPES, CURRENCIES } from '@moneylens/shared';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -99,21 +99,22 @@ function AccountFormSheet({
   const { mutate: deleteAccount, isPending: isDeleting } = useDeleteAccount();
 
   const isPending = isCreating || isUpdating || isDeleting;
-  const defaultCurrency = account?.currency ?? profile?.defaultCurrency ?? 'USD';
 
-  const defaultForm: FormState = {
-    name: account?.name ?? '',
-    type: account?.type ?? 'checking',
-    currency: defaultCurrency,
-    initialBalance: account ? String(account.initialBalance / 100) : '',
-    color: account?.color ?? ACCOUNT_COLORS[0] ?? '#2B7EFF',
-  };
-
-  const [form, setForm] = useState<FormState>(defaultForm);
+  const [form, setForm] = useState<FormState>({
+    name: '',
+    type: 'checking',
+    currency: 'USD',
+    initialBalance: '',
+    color: ACCOUNT_COLORS[0] ?? '#2B7EFF',
+  });
   const [error, setError] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
-  // Sync form when the sheet opens with a different account
-  function handleOpen() {
+  useEffect(() => {
+    if (!visible) {
+      setIsReady(false);
+      return;
+    }
     setForm({
       name: account?.name ?? '',
       type: account?.type ?? 'checking',
@@ -122,7 +123,8 @@ function AccountFormSheet({
       color: account?.color ?? ACCOUNT_COLORS[0] ?? '#2B7EFF',
     });
     setError(null);
-  }
+    setIsReady(true);
+  }, [visible, account, profile?.defaultCurrency]);
 
   function handleClose() {
     setError(null);
@@ -195,13 +197,7 @@ function AccountFormSheet({
   }
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={handleClose}
-      onShow={handleOpen}
-    >
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
       <Pressable style={styles.overlay} onPress={handleClose} />
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -218,89 +214,109 @@ function AccountFormSheet({
           )}
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <Text style={styles.label}>Account Name</Text>
-          <TextInput
-            style={styles.input}
-            value={form.name}
-            onChangeText={(v) => setForm((f) => ({ ...f, name: v }))}
-            placeholder="e.g. Main Checking"
-            placeholderTextColor={Colors.textMuted}
-          />
-
-          <Text style={styles.label}>Type</Text>
-          <View style={styles.chipRow}>
-            {ACCOUNT_TYPES.map((t) => (
-              <TouchableOpacity
-                key={t}
-                style={[styles.chip, form.type === t && styles.chipActive]}
-                onPress={() => setForm((f) => ({ ...f, type: t }))}
-              >
-                <Text style={[styles.chipText, form.type === t && styles.chipTextActive]}>
-                  {ACCOUNT_TYPE_LABELS[t]}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        {!isReady ? (
+          <View style={styles.skeleton}>
+            <View style={styles.skeletonLabel} />
+            <View style={styles.skeletonField} />
+            <View style={styles.skeletonLabel} />
+            <View style={styles.skeletonChipRow}>
+              {[1, 2, 3].map((i) => (
+                <View key={i} style={styles.skeletonChip} />
+              ))}
+            </View>
+            <View style={styles.skeletonLabel} />
+            <View style={styles.skeletonChipRow}>
+              {[1, 2].map((i) => (
+                <View key={i} style={styles.skeletonChip} />
+              ))}
+            </View>
+            <View style={styles.skeletonButton} />
           </View>
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={styles.label}>Account Name</Text>
+            <TextInput
+              style={styles.input}
+              value={form.name}
+              onChangeText={(v) => setForm((f) => ({ ...f, name: v }))}
+              placeholder="e.g. Main Checking"
+              placeholderTextColor={Colors.textMuted}
+            />
 
-          <Text style={styles.label}>Currency</Text>
-          <View style={styles.chipRow}>
-            {CURRENCIES.map((c) => (
-              <TouchableOpacity
-                key={c}
-                style={[styles.chip, form.currency === c && styles.chipActive]}
-                onPress={() => setForm((f) => ({ ...f, currency: c }))}
-              >
-                <Text style={[styles.chipText, form.currency === c && styles.chipTextActive]}>
-                  {c}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+            <Text style={styles.label}>Type</Text>
+            <View style={styles.chipRow}>
+              {ACCOUNT_TYPES.map((t) => (
+                <TouchableOpacity
+                  key={t}
+                  style={[styles.chip, form.type === t && styles.chipActive]}
+                  onPress={() => setForm((f) => ({ ...f, type: t }))}
+                >
+                  <Text style={[styles.chipText, form.type === t && styles.chipTextActive]}>
+                    {ACCOUNT_TYPE_LABELS[t]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-          {!isEdit && (
-            <>
-              <Text style={styles.label}>Initial Balance (optional)</Text>
-              <TextInput
-                style={styles.input}
-                value={form.initialBalance}
-                onChangeText={(v) => setForm((f) => ({ ...f, initialBalance: v }))}
-                placeholder="0.00"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="decimal-pad"
-              />
-            </>
-          )}
+            <Text style={styles.label}>Currency</Text>
+            <View style={styles.chipRow}>
+              {CURRENCIES.map((c) => (
+                <TouchableOpacity
+                  key={c}
+                  style={[styles.chip, form.currency === c && styles.chipActive]}
+                  onPress={() => setForm((f) => ({ ...f, currency: c }))}
+                >
+                  <Text style={[styles.chipText, form.currency === c && styles.chipTextActive]}>
+                    {c}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-          <Text style={styles.label}>Color</Text>
-          <View style={styles.colorRow}>
-            {ACCOUNT_COLORS.map((c) => (
-              <TouchableOpacity
-                key={c}
-                style={[
-                  styles.colorDot,
-                  { backgroundColor: c },
-                  form.color === c && styles.colorDotActive,
-                ]}
-                onPress={() => setForm((f) => ({ ...f, color: c }))}
-              />
-            ))}
-          </View>
-
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-          <TouchableOpacity
-            style={[styles.submitButton, isPending && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={isPending}
-          >
-            {isPending && !isDeleting ? (
-              <ActivityIndicator color={Colors.textPrimary} size="small" />
-            ) : (
-              <Text style={styles.submitText}>{isEdit ? 'Save Changes' : 'Create Account'}</Text>
+            {!isEdit && (
+              <>
+                <Text style={styles.label}>Initial Balance (optional)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={form.initialBalance}
+                  onChangeText={(v) => setForm((f) => ({ ...f, initialBalance: v }))}
+                  placeholder="0.00"
+                  placeholderTextColor={Colors.textMuted}
+                  keyboardType="decimal-pad"
+                />
+              </>
             )}
-          </TouchableOpacity>
-        </ScrollView>
+
+            <Text style={styles.label}>Color</Text>
+            <View style={styles.colorRow}>
+              {ACCOUNT_COLORS.map((c) => (
+                <TouchableOpacity
+                  key={c}
+                  style={[
+                    styles.colorDot,
+                    { backgroundColor: c },
+                    form.color === c && styles.colorDotActive,
+                  ]}
+                  onPress={() => setForm((f) => ({ ...f, color: c }))}
+                />
+              ))}
+            </View>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            <TouchableOpacity
+              style={[styles.submitButton, isPending && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={isPending}
+            >
+              {isPending && !isDeleting ? (
+                <ActivityIndicator color={Colors.textPrimary} size="small" />
+              ) : (
+                <Text style={styles.submitText}>{isEdit ? 'Save Changes' : 'Create Account'}</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        )}
       </View>
     </Modal>
   );
@@ -585,5 +601,36 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontSize: 16,
     fontWeight: '600',
+  },
+  skeleton: {
+    gap: 12,
+    paddingTop: 4,
+  },
+  skeletonLabel: {
+    height: 12,
+    width: 80,
+    borderRadius: 6,
+    backgroundColor: Colors.surfaceBg,
+  },
+  skeletonField: {
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.surfaceBg,
+  },
+  skeletonChipRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  skeletonChip: {
+    height: 34,
+    width: 80,
+    borderRadius: 20,
+    backgroundColor: Colors.surfaceBg,
+  },
+  skeletonButton: {
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: Colors.surfaceBg,
+    marginTop: 12,
   },
 });

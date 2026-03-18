@@ -277,11 +277,12 @@ export async function updateTransaction(
   if (input.notes !== undefined) updates.notes = input.notes ?? null;
   if (input.categoryId !== undefined) updates.categoryId = input.categoryId ?? null;
   if (input.amount !== undefined) {
-    // Preserve the sign based on existing type
-    updates.amount = toSignedAmount(
-      input.amount,
-      existing.type as 'income' | 'expense' | 'transfer'
-    );
+    if (existing.type === 'transfer') {
+      // Preserve original sign: outflow is negative, inflow is positive
+      updates.amount = existing.amount >= 0 ? input.amount : -input.amount;
+    } else {
+      updates.amount = toSignedAmount(input.amount, existing.type as 'income' | 'expense');
+    }
   }
 
   return db.transaction(async (tx) => {
@@ -295,6 +296,32 @@ export async function updateTransaction(
         .returning();
       if (!row) return null;
       updated = row;
+    }
+
+    // Mirror updates to the paired transfer transaction
+    if (existing.transferId && Object.keys(updates).length > 0) {
+      const pairedUpdates: Record<string, unknown> = {};
+      if (input.date !== undefined) pairedUpdates.date = input.date;
+      if (input.payee !== undefined) pairedUpdates.payee = input.payee ?? null;
+      if (input.notes !== undefined) pairedUpdates.notes = input.notes ?? null;
+      if (input.amount !== undefined) {
+        // Paired side always has the opposite sign
+        pairedUpdates.amount = -(updates.amount as number);
+      }
+
+      if (Object.keys(pairedUpdates).length > 0) {
+        await tx
+          .update(transaction)
+          .set(pairedUpdates)
+          .where(
+            and(
+              eq(transaction.transferId, existing.transferId),
+              eq(transaction.organizationId, organizationId),
+              // exclude the transaction we just updated
+              sql`${transaction.id} != ${id}`
+            )
+          );
+      }
     }
 
     // Replace tags if provided
