@@ -1,6 +1,6 @@
 # MoneyLens — Build Progress
 
-> Last updated: 2026-03-17 (session 4)
+> Last updated: 2026-03-18 (session 5)
 
 ---
 
@@ -12,14 +12,14 @@
 **Owns:** `apps/api/`, `packages/shared/schemas/`, `packages/shared/types/`
 
 #### Recurring Payments (Sprint 1)
-- [ ] DB schema: `recurring_rule` table (frequency, amount, accountId, categoryId, nextDueAt, status, paused)
-- [ ] `packages/shared/src/schemas/recurring.ts` — create/update/response schemas
-- [ ] `apps/api/src/services/recurring.service.ts` — CRUD + generation logic
-- [ ] `apps/api/src/services/__tests__/recurring.service.test.ts` — service-level tests for generation
-- [ ] `apps/api/src/routes/recurring.ts` — full CRUD + pause/resume endpoints
-- [ ] `apps/api/src/routes/__tests__/recurring.test.ts` — route tests
-- [ ] `apps/api/src/jobs/recurring.ts` — daily cron: generate due transactions
-- [ ] `apps/api/src/index.ts` — mount recurring routes
+- [x] DB schema: `recurring_rule` table (frequency, amount, accountId, categoryId, nextDueDate, isActive)
+- [x] `packages/shared/src/schemas/recurring.ts` — create/update/list/response schemas
+- [x] `apps/api/src/services/recurring.service.ts` — CRUD + generation logic
+- [x] `apps/api/src/services/__tests__/recurring.service.test.ts` — service-level tests for generation (13 tests)
+- [x] `apps/api/src/routes/recurring.ts` — full CRUD + pause/resume endpoints
+- [x] `apps/api/src/routes/__tests__/recurring.test.ts` — route tests (33 tests)
+- [x] `apps/api/src/jobs/generate-recurring.ts` — daily cron: generate due transactions (node-cron, 02:00 UTC)
+- [x] `apps/api/src/index.ts` — mount recurring routes + schedule cron
 
 #### Reports API (Sprint 2)
 - [ ] `apps/api/src/routes/reports.ts` — income-expenses, spending-by-category, account-summary
@@ -206,10 +206,10 @@
 ### Phase 3 — Smart Data Entry
 
 #### Recurring Payments `[P1 API · P2 Mobile]`
-- [ ] DB schema: `recurring_rule` table `[P1]`
-- [ ] `POST/GET/PATCH/DELETE /api/v1/recurring` + pause/resume `[P1]`
-- [ ] Scheduled job: daily generation of due transactions `[P1]`
-- [ ] Tests: service-level generation logic `[P1]`
+- [x] DB schema: `recurring_rule` table `[P1]`
+- [x] `POST/GET/PATCH/DELETE /api/v1/recurring` + pause/resume `[P1]`
+- [x] Scheduled job: daily generation of due transactions `[P1]`
+- [x] Tests: service-level generation logic `[P1]`
 - [ ] Mobile: `RecurringScreen` (list + create/edit sheet + pause/resume) `[P2]`
 - [ ] Mobile: Pending review queue `[P2]`
 

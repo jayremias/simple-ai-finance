@@ -2,6 +2,7 @@ export * from './auth';
 export * from './category';
 export * from './financial-account';
 export * from './organization';
+export * from './recurring';
 export * from './relations';
 export * from './tag';
 export * from './team';

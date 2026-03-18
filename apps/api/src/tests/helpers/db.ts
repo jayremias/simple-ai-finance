@@ -9,6 +9,7 @@ export async function truncateAll(): Promise<void> {
   // List child tables before parents to respect FK order — no CASCADE needed
   await db.execute(
     sql`TRUNCATE TABLE
+      "recurring_rule",
       "transaction_tag",
       "transaction",
       "tag",

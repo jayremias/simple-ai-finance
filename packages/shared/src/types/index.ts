@@ -11,6 +11,14 @@ export type {
   UpdateCategoryInput,
 } from './category';
 
+export type {
+  CreateRecurringRuleInput,
+  ListRecurringRulesInput,
+  RecurringRuleListResponse,
+  RecurringRuleResponse,
+  UpdateRecurringRuleInput,
+} from './recurring';
+
 export type { CreateTagInput, TagResponse } from './tag';
 
 export type {
