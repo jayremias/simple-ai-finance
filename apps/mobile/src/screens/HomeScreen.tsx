@@ -20,6 +20,7 @@ import {
 import { Colors } from '@/theme/colors';
 import { CategoryPicker } from '../components/common/CategoryPicker';
 import { DatePicker } from '../components/common/DatePicker';
+import { PayeePicker } from '../components/common/PayeePicker';
 import { TagPicker } from '../components/common/TagPicker';
 import { TransactionEditSheet } from '../components/common/TransactionEditSheet';
 import { TransactionItem } from '../components/common/TransactionItem';
@@ -220,7 +221,7 @@ function TransactionFormSheet({
           <TextInput
             style={[sheetStyles.amountInput, { color: accentColor }]}
             value={form.amount}
-            onChangeText={(v) => set('amount', v)}
+            onChangeText={(text) => set('amount', text)}
             placeholder="0.00"
             placeholderTextColor={Colors.textMuted}
             keyboardType="decimal-pad"
@@ -269,20 +270,14 @@ function TransactionFormSheet({
 
           {/* Payee */}
           <Text style={sheetStyles.label}>Payee (optional)</Text>
-          <TextInput
-            style={sheetStyles.input}
-            value={form.payee}
-            onChangeText={(v) => set('payee', v)}
-            placeholder="Payee name"
-            placeholderTextColor={Colors.textMuted}
-          />
+          <PayeePicker value={form.payee} onChange={(text) => set('payee', text)} />
 
           {/* Notes */}
           <Text style={sheetStyles.label}>Notes (optional)</Text>
           <TextInput
             style={[sheetStyles.input, sheetStyles.notesInput]}
             value={form.notes}
-            onChangeText={(v) => set('notes', v)}
+            onChangeText={(text) => set('notes', text)}
             placeholder="Add a note…"
             placeholderTextColor={Colors.textMuted}
             multiline

@@ -4,7 +4,7 @@ import type {
   TransactionResponse,
   UpdateTransactionInput,
 } from '@moneylens/shared';
-import { and, desc, eq, gte, lt, lte, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, gte, ilike, isNotNull, lt, lte, or, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { tag } from '@/lib/db/schema/tag';
 import { team } from '@/lib/db/schema/team';
@@ -336,6 +336,23 @@ export async function updateTransaction(
     const tagMap = await fetchTagsForTransactions([updated.id]);
     return serialize({ ...updated, tags: tagMap.get(updated.id) ?? [] });
   });
+}
+
+export async function listPayees(organizationId: string, q?: string): Promise<string[]> {
+  const trimmed = q?.trim();
+  const conditions = [eq(transaction.organizationId, organizationId), isNotNull(transaction.payee)];
+
+  if (trimmed) {
+    conditions.push(ilike(transaction.payee, `%${trimmed}%`));
+  }
+
+  const rows = await db
+    .selectDistinct({ payee: transaction.payee })
+    .from(transaction)
+    .where(and(...conditions))
+    .orderBy(transaction.payee);
+
+  return rows.map((r) => r.payee as string);
 }
 
 export async function deleteTransaction(
