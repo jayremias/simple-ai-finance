@@ -8,7 +8,6 @@ import {
   createTestOrg,
   createTestSession,
   createTestUser,
-  setActiveOrg,
 } from '@/tests/helpers/auth';
 import { truncateAll } from '@/tests/helpers/db';
 
