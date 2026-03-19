@@ -10,6 +10,7 @@ import accounts from '@/routes/accounts';
 import authRoutes from '@/routes/auth';
 import categories from '@/routes/categories';
 import health from '@/routes/health';
+import recurring from '@/routes/recurring';
 import tags from '@/routes/tags';
 import transactions from '@/routes/transactions';
 import users from '@/routes/users';
@@ -48,6 +49,7 @@ api.route('/', accounts);
 api.route('/', categories);
 api.route('/', tags);
 api.route('/', transactions);
+api.route('/', recurring);
 
 app.route('/', api);
 
