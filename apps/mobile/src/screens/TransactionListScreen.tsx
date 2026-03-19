@@ -1,17 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { TransactionResponse } from '@moneylens/shared';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { format } from 'date-fns';
 import { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -40,6 +42,21 @@ const TYPE_COLOR: Record<TxType, string> = {
   transfer: Colors.brandBlue,
 };
 
+function toISO(date: Date): string {
+  return format(date, 'yyyy-MM-dd');
+}
+
+function displayDate(iso: string): string {
+  const [year, month, day] = iso.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+type DatePickerTarget = 'from' | 'to' | null;
+
 export function TransactionListScreen() {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
@@ -51,6 +68,7 @@ export function TransactionListScreen() {
   const [selectedAccountId, setSelectedAccountId] = useState(route.params?.accountId ?? '');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [pickerTarget, setPickerTarget] = useState<DatePickerTarget>(null);
   const [editTransaction, setEditTransaction] = useState<TransactionResponse | null>(null);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, refetch, isRefetching } =
@@ -68,6 +86,26 @@ export function TransactionListScreen() {
       fetchNextPage();
     }
   }
+
+  function handleDateChange(_: unknown, selected?: Date) {
+    if (Platform.OS === 'android') setPickerTarget(null);
+    if (!selected || !pickerTarget) return;
+    const iso = toISO(selected);
+    if (pickerTarget === 'from') setDateFrom(iso);
+    else setDateTo(iso);
+  }
+
+  const pickerValue = (() => {
+    if (pickerTarget === 'from' && dateFrom) {
+      const [y, m, d] = dateFrom.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    if (pickerTarget === 'to' && dateTo) {
+      const [y, m, d] = dateTo.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    return new Date();
+  })();
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -162,40 +200,84 @@ export function TransactionListScreen() {
 
         {/* Date range */}
         <View style={styles.dateRow}>
-          <View style={styles.dateField}>
-            <Text style={styles.dateLabel}>From</Text>
-            <TextInput
-              style={styles.dateInput}
-              value={dateFrom}
-              onChangeText={setDateFrom}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={Colors.textMuted}
+          <TouchableOpacity
+            style={[styles.datePicker, dateFrom ? styles.datePickerActive : null]}
+            onPress={() => setPickerTarget(pickerTarget === 'from' ? null : 'from')}
+          >
+            <Ionicons
+              name="calendar-outline"
+              size={14}
+              color={dateFrom ? Colors.brandBlue : Colors.textMuted}
             />
-          </View>
-          <View style={styles.dateSeparator} />
-          <View style={styles.dateField}>
-            <Text style={styles.dateLabel}>To</Text>
-            <TextInput
-              style={styles.dateInput}
-              value={dateTo}
-              onChangeText={setDateTo}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={Colors.textMuted}
+            <Text style={[styles.datePickerText, dateFrom && styles.datePickerTextActive]}>
+              {dateFrom ? displayDate(dateFrom) : 'From'}
+            </Text>
+          </TouchableOpacity>
+
+          <Ionicons name="arrow-forward" size={14} color={Colors.textMuted} />
+
+          <TouchableOpacity
+            style={[styles.datePicker, dateTo ? styles.datePickerActive : null]}
+            onPress={() => setPickerTarget(pickerTarget === 'to' ? null : 'to')}
+          >
+            <Ionicons
+              name="calendar-outline"
+              size={14}
+              color={dateTo ? Colors.brandBlue : Colors.textMuted}
             />
-          </View>
+            <Text style={[styles.datePickerText, dateTo && styles.datePickerTextActive]}>
+              {dateTo ? displayDate(dateTo) : 'To'}
+            </Text>
+          </TouchableOpacity>
+
           {(dateFrom || dateTo) && (
             <TouchableOpacity
               onPress={() => {
                 setDateFrom('');
                 setDateTo('');
+                setPickerTarget(null);
               }}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={styles.clearDate}
             >
               <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Native date picker — inline on iOS, dialog on Android */}
+        {pickerTarget !== null && (
+          <View style={Platform.OS === 'ios' ? styles.iosPickerWrap : undefined}>
+            <DateTimePicker
+              value={pickerValue}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              onChange={handleDateChange}
+              maximumDate={
+                pickerTarget === 'from' && dateTo
+                  ? (() => {
+                      const [y, m, d] = dateTo.split('-').map(Number);
+                      return new Date(y, m - 1, d);
+                    })()
+                  : undefined
+              }
+              minimumDate={
+                pickerTarget === 'to' && dateFrom
+                  ? (() => {
+                      const [y, m, d] = dateFrom.split('-').map(Number);
+                      return new Date(y, m - 1, d);
+                    })()
+                  : undefined
+              }
+              accentColor={Colors.brandBlue}
+              themeVariant="dark"
+            />
+            {Platform.OS === 'ios' && (
+              <TouchableOpacity style={styles.iosDone} onPress={() => setPickerTarget(null)}>
+                <Text style={styles.iosDoneText}>Done</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
 
       {/* List */}
@@ -282,25 +364,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 8,
   },
-  dateField: { flex: 1 },
-  dateLabel: { color: Colors.textMuted, fontSize: 11, marginBottom: 4 },
-  dateInput: {
-    backgroundColor: Colors.surfaceBg,
+  datePicker: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: Colors.border,
-    color: Colors.textPrimary,
-    fontSize: 13,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: Colors.surfaceBg,
   },
-  dateSeparator: {
-    width: 1,
-    height: 32,
-    backgroundColor: Colors.border,
-    marginTop: 16,
+  datePickerActive: {
+    borderColor: Colors.brandBlue,
+    backgroundColor: `${Colors.brandBlue}18`,
   },
-  clearDate: { marginTop: 16 },
+  datePickerText: { color: Colors.textMuted, fontSize: 13, flex: 1 },
+  datePickerTextActive: { color: Colors.brandBlue, fontWeight: '500' },
+  iosPickerWrap: {
+    marginHorizontal: 20,
+    backgroundColor: Colors.surfaceBg,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  iosDone: {
+    alignItems: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  iosDoneText: { color: Colors.brandBlue, fontSize: 15, fontWeight: '600' },
   listContent: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24, flexGrow: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
   emptyState: { alignItems: 'center', paddingVertical: 60, gap: 8 },
