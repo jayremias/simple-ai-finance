@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '@/theme/colors';
 import { usePayees } from '@/hooks/useTransactions';
@@ -9,8 +10,9 @@ export function PayeePicker({
   value: string;
   onChange: (text: string) => void;
 }) {
+  const [isFocused, setIsFocused] = useState(false);
   const { data: suggestions = [] } = usePayees(value);
-  const showSuggestions = value.trim().length > 0 && suggestions.length > 0;
+  const showSuggestions = isFocused && value.trim().length > 0 && suggestions.length > 0;
 
   return (
     <View style={styles.wrapper}>
@@ -18,6 +20,8 @@ export function PayeePicker({
         style={styles.input}
         value={value}
         onChangeText={onChange}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
         placeholder="Payee name"
         placeholderTextColor={Colors.textMuted}
         autoCorrect={false}
@@ -25,7 +29,14 @@ export function PayeePicker({
       {showSuggestions && (
         <View style={styles.dropdown}>
           {suggestions.map((payee) => (
-            <TouchableOpacity key={payee} style={styles.item} onPress={() => onChange(payee)}>
+            <TouchableOpacity
+              key={payee}
+              style={styles.item}
+              onPress={() => {
+                onChange(payee);
+                setIsFocused(false);
+              }}
+            >
               <Text style={styles.itemText}>{payee}</Text>
             </TouchableOpacity>
           ))}
