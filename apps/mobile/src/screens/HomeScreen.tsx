@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import type { AccountResponse, CategoryTreeResponse, TransactionResponse } from '@moneylens/shared';
+import type { AccountResponse, TransactionResponse } from '@moneylens/shared';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import { Colors } from '@/theme/colors';
+import { CategoryPicker } from '../components/common/CategoryPicker';
 import { TransactionItem } from '../components/common/TransactionItem';
 import { BalanceCard } from '../components/home/BalanceCard';
 import { FeedAISection } from '../components/home/FeedAISection';
@@ -93,107 +94,6 @@ function AccountPicker({
           </Text>
         </TouchableOpacity>
       ))}
-    </View>
-  );
-}
-
-type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
-
-function CategoryPicker({
-  categories,
-  selected,
-  onSelect,
-}: {
-  categories: CategoryTreeResponse[];
-  selected: string;
-  onSelect: (id: string) => void;
-}) {
-  const [expandedParentId, setExpandedParentId] = useState<string>('');
-
-  // Derive which parent is active from the selected id
-  const selectedParent = categories.find(
-    (c) => c.id === selected || c.children.some((ch) => ch.id === selected)
-  );
-  const expandedCat = categories.find((c) => c.id === expandedParentId);
-
-  function handleParentPress(cat: CategoryTreeResponse) {
-    if (expandedParentId === cat.id) {
-      // Collapse and clear selection
-      setExpandedParentId('');
-      onSelect('');
-    } else {
-      setExpandedParentId(cat.id);
-      onSelect(cat.id);
-    }
-  }
-
-  function handleChildPress(childId: string) {
-    onSelect(selected === childId ? expandedParentId : childId);
-  }
-
-  return (
-    <View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={sheetStyles.chipRow}>
-          {categories.map((cat) => {
-            const isActive = selectedParent?.id === cat.id;
-            return (
-              <TouchableOpacity
-                key={cat.id}
-                style={[
-                  sheetStyles.chip,
-                  isActive && {
-                    backgroundColor: cat.color ?? Colors.brandBlue,
-                    borderColor: cat.color ?? Colors.brandBlue,
-                  },
-                ]}
-                onPress={() => handleParentPress(cat)}
-              >
-                <Ionicons
-                  name={(cat.icon ?? 'ellipse-outline') as IoniconsName}
-                  size={14}
-                  color={isActive ? Colors.textPrimary : Colors.textSecondary}
-                />
-                <Text style={[sheetStyles.chipText, isActive && sheetStyles.chipTextActive]}>
-                  {cat.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </ScrollView>
-
-      {expandedCat && expandedCat.children.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={sheetStyles.subRow}>
-          <View style={sheetStyles.chipRow}>
-            {expandedCat.children.map((child) => {
-              const isActive = selected === child.id;
-              return (
-                <TouchableOpacity
-                  key={child.id}
-                  style={[
-                    sheetStyles.subChip,
-                    isActive && {
-                      backgroundColor: expandedCat.color ?? Colors.brandBlue,
-                      borderColor: expandedCat.color ?? Colors.brandBlue,
-                    },
-                  ]}
-                  onPress={() => handleChildPress(child.id)}
-                >
-                  <Ionicons
-                    name={(child.icon ?? 'ellipse-outline') as IoniconsName}
-                    size={12}
-                    color={isActive ? Colors.textPrimary : Colors.textSecondary}
-                  />
-                  <Text style={[sheetStyles.subChipText, isActive && sheetStyles.chipTextActive]}>
-                    {child.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </ScrollView>
-      )}
     </View>
   );
 }
@@ -838,19 +738,6 @@ const sheetStyles = StyleSheet.create({
   chipActive: { backgroundColor: Colors.brandBlue, borderColor: Colors.brandBlue },
   chipText: { color: Colors.textSecondary, fontSize: 13 },
   chipTextActive: { color: Colors.textPrimary, fontWeight: '600' },
-  subRow: { marginTop: 8 },
-  subChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surfaceBg,
-  },
-  subChipText: { color: Colors.textSecondary, fontSize: 12 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   input: {
     backgroundColor: Colors.surfaceBg,

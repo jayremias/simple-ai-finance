@@ -20,6 +20,7 @@ import {
   View,
 } from 'react-native';
 import { Colors } from '@/theme/colors';
+import { CategoryPicker } from '../components/common/CategoryPicker';
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
 import {
@@ -313,34 +314,12 @@ function RuleFormSheet({
           {categories.length > 0 && (
             <>
               <Text style={styles.label}>Category (optional)</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.chipRow}>
-                  <TouchableOpacity
-                    style={[styles.chip, !form.categoryId && styles.chipActive]}
-                    onPress={() => set('categoryId', '')}
-                  >
-                    <Text style={[styles.chipText, !form.categoryId && styles.chipTextActive]}>
-                      None
-                    </Text>
-                  </TouchableOpacity>
-                  {categories.map((cat) => (
-                    <TouchableOpacity
-                      key={cat.id}
-                      style={[styles.chip, form.categoryId === cat.id && styles.chipActive]}
-                      onPress={() => set('categoryId', cat.id)}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          form.categoryId === cat.id && styles.chipTextActive,
-                        ]}
-                      >
-                        {cat.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
+              <CategoryPicker
+                categories={categories}
+                selected={form.categoryId}
+                onSelect={(id) => set('categoryId', id)}
+                showNone
+              />
             </>
           )}
 
