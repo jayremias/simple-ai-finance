@@ -6,7 +6,7 @@ import { AccountsScreen } from '../screens/AccountsScreen';
 import { CategoriesScreen } from '../screens/CategoriesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
-import { ScanPlaceholderScreen } from '../screens/ScanPlaceholderScreen';
+import { RecurringScreen } from '../screens/RecurringScreen';
 import type { MainTabParamList } from '../types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -63,11 +63,11 @@ export function MainTabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Scan"
-        component={ScanPlaceholderScreen}
+        name="Recurring"
+        component={RecurringScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon name={focused ? 'scan' : 'scan-outline'} focused={focused} />
+            <TabBarIcon name={focused ? 'repeat' : 'repeat-outline'} focused={focused} />
           ),
         }}
       />
