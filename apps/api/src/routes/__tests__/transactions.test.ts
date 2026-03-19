@@ -521,3 +521,130 @@ describe('DELETE /api/v1/transactions/:id', () => {
     expect(list.data.length).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/transactions/payees
+// ---------------------------------------------------------------------------
+
+describe('GET /api/v1/transactions/payees', () => {
+  test('returns 401 when not authenticated', async () => {
+    const res = await app.request('/api/v1/transactions/payees');
+    expect(res.status).toBe(401);
+  });
+
+  test('returns distinct payees for the org', async () => {
+    const { token } = await createAuthenticatedUserWithOrg();
+    const account = await createAccount(token);
+
+    await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 100,
+      date: '2024-01-01',
+      payee: 'Starbucks',
+    });
+    await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 200,
+      date: '2024-01-02',
+      payee: 'Netflix',
+    });
+    await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 300,
+      date: '2024-01-03',
+      payee: 'Starbucks',
+    }); // duplicate
+
+    const res = await app.request('/api/v1/transactions/payees', { headers: bearerHeader(token) });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: string[] };
+    expect(body.data).toHaveLength(2);
+    expect(body.data).toContain('Starbucks');
+    expect(body.data).toContain('Netflix');
+  });
+
+  test('filters payees by query param ?q=', async () => {
+    const { token } = await createAuthenticatedUserWithOrg();
+    const account = await createAccount(token);
+
+    await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 100,
+      date: '2024-01-01',
+      payee: 'Starbucks',
+    });
+    await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 200,
+      date: '2024-01-02',
+      payee: 'Netflix',
+    });
+    await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 300,
+      date: '2024-01-03',
+      payee: 'Star Wars Store',
+    });
+
+    const res = await app.request('/api/v1/transactions/payees?q=star', {
+      headers: bearerHeader(token),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: string[] };
+    expect(body.data).toHaveLength(2);
+    expect(body.data).toContain('Starbucks');
+    expect(body.data).toContain('Star Wars Store');
+    expect(body.data).not.toContain('Netflix');
+  });
+
+  test('excludes null payees', async () => {
+    const { token } = await createAuthenticatedUserWithOrg();
+    const account = await createAccount(token);
+
+    await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 100,
+      date: '2024-01-01',
+    }); // no payee
+    await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 200,
+      date: '2024-01-02',
+      payee: 'Netflix',
+    });
+
+    const res = await app.request('/api/v1/transactions/payees', { headers: bearerHeader(token) });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: string[] };
+    expect(body.data).toEqual(['Netflix']);
+  });
+
+  test('does not return payees from another org', async () => {
+    const { token } = await createAuthenticatedUserWithOrg();
+    const account = await createAccount(token);
+    await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 100,
+      date: '2024-01-01',
+      payee: 'MyPayee',
+    });
+
+    const other = await createTestUser({ email: 'other2@example.com' });
+    const org2 = await createTestOrg(other.id);
+    const token2 = await createTestSession(other.id, { activeOrganizationId: org2.id });
+
+    const res = await app.request('/api/v1/transactions/payees', { headers: bearerHeader(token2) });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: string[] };
+    expect(body.data).toHaveLength(0);
+  });
+});

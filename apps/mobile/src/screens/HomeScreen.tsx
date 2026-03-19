@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import { Colors } from '@/theme/colors';
+import { PayeePicker } from '../components/common/PayeePicker';
 import { TransactionItem } from '../components/common/TransactionItem';
 import { BalanceCard } from '../components/home/BalanceCard';
 import { FeedAISection } from '../components/home/FeedAISection';
@@ -353,7 +354,7 @@ function TransactionEditSheet({
             <TextInput
               style={[sheetStyles.amountInput, { color: accentColor }]}
               value={form.amount}
-              onChangeText={(v) => set('amount', v)}
+              onChangeText={(text) => set('amount', text)}
               placeholder="0.00"
               placeholderTextColor={Colors.textMuted}
               keyboardType="decimal-pad"
@@ -376,27 +377,21 @@ function TransactionEditSheet({
             <TextInput
               style={sheetStyles.input}
               value={form.date}
-              onChangeText={(v) => set('date', v)}
+              onChangeText={(text) => set('date', text)}
               placeholder="YYYY-MM-DD"
               placeholderTextColor={Colors.textMuted}
             />
 
             {/* Payee */}
             <Text style={sheetStyles.label}>Payee (optional)</Text>
-            <TextInput
-              style={sheetStyles.input}
-              value={form.payee}
-              onChangeText={(v) => set('payee', v)}
-              placeholder="e.g. Starbucks"
-              placeholderTextColor={Colors.textMuted}
-            />
+            <PayeePicker value={form.payee} onChange={(text) => set('payee', text)} />
 
             {/* Notes */}
             <Text style={sheetStyles.label}>Notes (optional)</Text>
             <TextInput
               style={[sheetStyles.input, sheetStyles.notesInput]}
               value={form.notes}
-              onChangeText={(v) => set('notes', v)}
+              onChangeText={(text) => set('notes', text)}
               placeholder="Add a note…"
               placeholderTextColor={Colors.textMuted}
               multiline
@@ -548,7 +543,7 @@ function TransactionFormSheet({
           <TextInput
             style={[sheetStyles.amountInput, { color: accentColor }]}
             value={form.amount}
-            onChangeText={(v) => set('amount', v)}
+            onChangeText={(text) => set('amount', text)}
             placeholder="0.00"
             placeholderTextColor={Colors.textMuted}
             keyboardType="decimal-pad"
@@ -596,27 +591,21 @@ function TransactionFormSheet({
           <TextInput
             style={sheetStyles.input}
             value={form.date}
-            onChangeText={(v) => set('date', v)}
+            onChangeText={(text) => set('date', text)}
             placeholder="YYYY-MM-DD"
             placeholderTextColor={Colors.textMuted}
           />
 
           {/* Payee */}
           <Text style={sheetStyles.label}>Payee (optional)</Text>
-          <TextInput
-            style={sheetStyles.input}
-            value={form.payee}
-            onChangeText={(v) => set('payee', v)}
-            placeholder="e.g. Starbucks"
-            placeholderTextColor={Colors.textMuted}
-          />
+          <PayeePicker value={form.payee} onChange={(text) => set('payee', text)} />
 
           {/* Notes */}
           <Text style={sheetStyles.label}>Notes (optional)</Text>
           <TextInput
             style={[sheetStyles.input, sheetStyles.notesInput]}
             value={form.notes}
-            onChangeText={(v) => set('notes', v)}
+            onChangeText={(text) => set('notes', text)}
             placeholder="Add a note…"
             placeholderTextColor={Colors.textMuted}
             multiline
