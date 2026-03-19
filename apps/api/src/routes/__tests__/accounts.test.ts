@@ -482,7 +482,9 @@ describe('balance calculation', () => {
     // balance = 100000 - 3000 + 5000 = 102000
     const listRes = await app.request('/api/v1/accounts', { headers: bearerHeader(token) });
     const accounts = (await listRes.json()) as AccountResponse[];
-    const updated = accounts.find((a) => a.id === account.id)!;
+    const updated = accounts.find((a) => a.id === account.id);
+    if (!updated) throw new Error('Account not found');
+
     expect(updated.balance).toBe(102000);
 
     // GET /accounts/:id also reflects it
