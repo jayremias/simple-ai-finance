@@ -2,7 +2,13 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-nativ
 import { Colors } from '@/theme/colors';
 import { usePayees } from '../../hooks/useTransactions';
 
-export function PayeePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function PayeePicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (text: string) => void;
+}) {
   const { data: suggestions = [] } = usePayees(value);
   const showSuggestions = value.trim().length > 0 && suggestions.length > 0;
 
