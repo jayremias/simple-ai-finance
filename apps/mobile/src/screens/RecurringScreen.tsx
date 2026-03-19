@@ -88,10 +88,12 @@ function RuleFormSheet({
   rule,
   visible,
   onClose,
+  onDelete,
 }: {
   rule: RecurringRuleResponse | null;
   visible: boolean;
   onClose: () => void;
+  onDelete?: () => void;
 }) {
   const { data: accountsData } = useAccounts();
   const { data: categories = [] } = useCategories();
@@ -238,7 +240,14 @@ function RuleFormSheet({
       <View style={styles.sheet}>
         <View style={styles.handle} />
 
-        <Text style={styles.sheetTitle}>{isEdit ? 'Edit Rule' : 'New Recurring Rule'}</Text>
+        <View style={styles.sheetHeader}>
+          <Text style={styles.sheetTitle}>{isEdit ? 'Edit Rule' : 'New Recurring Rule'}</Text>
+          {isEdit && onDelete && (
+            <TouchableOpacity onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={styles.deleteLink}>Delete</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {/* Name */}
@@ -454,15 +463,7 @@ function RuleFormSheet({
 // Rule card
 // ---------------------------------------------------------------------------
 
-function RuleCard({
-  rule,
-  onEdit,
-  onDelete,
-}: {
-  rule: RecurringRuleResponse;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
+function RuleCard({ rule, onEdit }: { rule: RecurringRuleResponse; onEdit: () => void }) {
   const { mutate: pause, isPending: isPausing } = usePauseRecurringRule();
   const { mutate: resume, isPending: isResuming } = useResumeRecurringRule();
   const toggling = isPausing || isResuming;
@@ -479,27 +480,46 @@ function RuleCard({
       {/* Left accent bar */}
       <View style={[cardStyles.accent, { backgroundColor: color }]} />
 
+      {/* Body */}
       <View style={cardStyles.body}>
-        <View style={cardStyles.row}>
+        <View style={cardStyles.topRow}>
           <Text style={cardStyles.name} numberOfLines={1}>
             {rule.name}
           </Text>
           <Text style={[cardStyles.amount, { color }]}>{formatAmount(rule.amount, rule.type)}</Text>
         </View>
 
-        <View style={cardStyles.row}>
-          <Text style={cardStyles.meta}>
-            {frequencyLabel(rule.frequency)} · Next {rule.nextDueDate}
-          </Text>
-          {rule.payee ? (
-            <Text style={cardStyles.payee} numberOfLines={1}>
-              {rule.payee}
-            </Text>
-          ) : null}
+        <View style={cardStyles.bottomRow}>
+          <View style={cardStyles.badges}>
+            <View style={cardStyles.freqBadge}>
+              <Text style={cardStyles.freqText}>{frequencyLabel(rule.frequency)}</Text>
+            </View>
+            {!rule.isActive && (
+              <View style={cardStyles.pausedBadge}>
+                <Text style={cardStyles.pausedText}>Paused</Text>
+              </View>
+            )}
+          </View>
+          <Text style={cardStyles.nextDate}>Next {rule.nextDueDate}</Text>
         </View>
+
+        {rule.payee ? (
+          <Text style={cardStyles.payee} numberOfLines={1}>
+            {rule.payee}
+          </Text>
+        ) : null}
       </View>
 
-      <View style={cardStyles.actions}>
+      {/* Toggle — stop propagation so tap doesn't open edit sheet */}
+      <TouchableOpacity
+        style={cardStyles.toggleArea}
+        onPress={(e) => {
+          e.stopPropagation();
+          handleToggle();
+        }}
+        activeOpacity={1}
+        disabled={toggling}
+      >
         {toggling ? (
           <ActivityIndicator size="small" color={Colors.textMuted} />
         ) : (
@@ -510,14 +530,7 @@ function RuleCard({
             trackColor={{ false: Colors.border, true: `${Colors.brandBlue}55` }}
           />
         )}
-        <TouchableOpacity
-          onPress={onDelete}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={cardStyles.deleteBtn}
-        >
-          <Ionicons name="trash-outline" size={16} color={Colors.textMuted} />
-        </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -551,7 +564,10 @@ export function RecurringScreen() {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => deleteRule(rule.id),
+        onPress: () => {
+          deleteRule(rule.id);
+          setFormVisible(false);
+        },
       },
     ]);
   }
@@ -587,13 +603,7 @@ export function RecurringScreen() {
         <FlatList
           data={rules}
           keyExtractor={(r) => r.id}
-          renderItem={({ item }) => (
-            <RuleCard
-              rule={item}
-              onEdit={() => openEdit(item)}
-              onDelete={() => handleDelete(item)}
-            />
-          )}
+          renderItem={({ item }) => <RuleCard rule={item} onEdit={() => openEdit(item)} />}
           contentContainerStyle={styles.list}
           onRefresh={refetch}
           refreshing={isLoading}
@@ -601,7 +611,12 @@ export function RecurringScreen() {
         />
       )}
 
-      <RuleFormSheet visible={formVisible} rule={editRule} onClose={() => setFormVisible(false)} />
+      <RuleFormSheet
+        visible={formVisible}
+        rule={editRule}
+        onClose={() => setFormVisible(false)}
+        onDelete={editRule ? () => handleDelete(editRule) : undefined}
+      />
     </View>
   );
 }
@@ -665,11 +680,21 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 16,
   },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   sheetTitle: {
     color: Colors.textPrimary,
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 8,
+  },
+  deleteLink: {
+    color: Colors.danger,
+    fontSize: 14,
+    fontWeight: '500',
   },
   label: {
     color: Colors.textSecondary,
@@ -747,20 +772,54 @@ const styles = StyleSheet.create({
 const cardStyles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     backgroundColor: Colors.cardBg,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: 'hidden',
   },
-  accent: { width: 4, alignSelf: 'stretch' },
-  body: { flex: 1, padding: 14, gap: 4 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  accent: { width: 4, backgroundColor: Colors.border },
+  body: { flex: 1, paddingVertical: 14, paddingLeft: 14, paddingRight: 8, gap: 6 },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   name: { color: Colors.textPrimary, fontSize: 15, fontWeight: '600', flex: 1 },
-  amount: { fontSize: 15, fontWeight: '700' },
-  meta: { color: Colors.textMuted, fontSize: 12, flex: 1 },
-  payee: { color: Colors.textSecondary, fontSize: 12, maxWidth: 100 },
-  actions: { paddingRight: 12, alignItems: 'center', gap: 8 },
-  deleteBtn: { padding: 4 },
+  amount: { fontSize: 16, fontWeight: '700' },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  badges: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  freqBadge: {
+    backgroundColor: Colors.surfaceBg,
+    borderRadius: 6,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  freqText: { color: Colors.textSecondary, fontSize: 11, fontWeight: '500' },
+  pausedBadge: {
+    backgroundColor: `${Colors.warning}22`,
+    borderRadius: 6,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: `${Colors.warning}44`,
+  },
+  pausedText: { color: Colors.warning, fontSize: 11, fontWeight: '600' },
+  nextDate: { color: Colors.textMuted, fontSize: 12 },
+  payee: { color: Colors.textMuted, fontSize: 12 },
+  toggleArea: {
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 60,
+  },
 });
