@@ -20,6 +20,7 @@ import {
 import { Colors } from '@/theme/colors';
 import { CategoryPicker } from '../components/common/CategoryPicker';
 import { DatePicker } from '../components/common/DatePicker';
+import { TagPicker } from '../components/common/TagPicker';
 import { TransactionEditSheet } from '../components/common/TransactionEditSheet';
 import { TransactionItem } from '../components/common/TransactionItem';
 import { BalanceCard } from '../components/home/BalanceCard';
@@ -27,6 +28,7 @@ import { FeedAISection } from '../components/home/FeedAISection';
 import { HomeHeader } from '../components/home/HomeHeader';
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
+import { useCreateTag, useTags } from '../hooks/useTags';
 import { useCreateTransaction, useTransactions } from '../hooks/useTransactions';
 import { useUserProfile } from '../hooks/useUserProfile';
 import type { RootStackParamList } from '../types';
@@ -51,6 +53,7 @@ type FormState = {
   date: string;
   payee: string;
   notes: string;
+  tagIds: string[];
 };
 
 const TYPE_LABELS: { value: TxType; label: string }[] = [
@@ -105,6 +108,8 @@ function TransactionFormSheet({
   onClose: () => void;
 }) {
   const { data: categories = [] } = useCategories();
+  const { data: allTags = [] } = useTags();
+  const { mutateAsync: createTagMutation } = useCreateTag();
   const { mutate: createTransaction, isPending } = useCreateTransaction();
 
   const defaultForm = (): FormState => ({
@@ -116,6 +121,7 @@ function TransactionFormSheet({
     date: todayISO(),
     payee: '',
     notes: '',
+    tagIds: [],
   });
 
   const [form, setForm] = useState<FormState>(defaultForm);
@@ -163,6 +169,7 @@ function TransactionFormSheet({
         date: form.date,
         payee: form.payee.trim() || undefined,
         notes: form.notes.trim() || undefined,
+        tagIds: form.tagIds.length > 0 ? form.tagIds : undefined,
       },
       {
         onSuccess: handleClose,
@@ -279,6 +286,25 @@ function TransactionFormSheet({
             placeholder="Add a note…"
             placeholderTextColor={Colors.textMuted}
             multiline
+          />
+
+          {/* Tags */}
+          <Text style={sheetStyles.label}>Tags (optional)</Text>
+          <TagPicker
+            allTags={allTags}
+            selectedIds={form.tagIds}
+            onToggle={(id) =>
+              set(
+                'tagIds',
+                form.tagIds.includes(id)
+                  ? form.tagIds.filter((t) => t !== id)
+                  : [...form.tagIds, id]
+              )
+            }
+            onCreateAndAdd={async (name) => {
+              const tag = await createTagMutation(name);
+              set('tagIds', [...form.tagIds, tag.id]);
+            }}
           />
 
           {error ? <Text style={sheetStyles.error}>{error}</Text> : null}
