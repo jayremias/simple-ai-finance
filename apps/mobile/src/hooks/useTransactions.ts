@@ -4,7 +4,7 @@ import type {
   TransactionResponse,
   UpdateTransactionInput,
 } from '@moneylens/shared';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 
 interface ListTransactionsParams {
@@ -14,6 +14,20 @@ interface ListTransactionsParams {
   dateFrom?: string;
   dateTo?: string;
   limit?: number;
+}
+
+export function useInfiniteTransactions(params: Omit<ListTransactionsParams, 'cursor'> = {}) {
+  return useInfiniteQuery({
+    queryKey: ['transactions', 'infinite', params],
+    queryFn: async ({ pageParam }: { pageParam: string | undefined }) => {
+      const res = await api.get<TransactionListResponse>('/transactions', {
+        params: { ...params, cursor: pageParam, limit: 20 },
+      });
+      return res.data;
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
 }
 
 export function useTransactions(params: ListTransactionsParams = {}) {

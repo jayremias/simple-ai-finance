@@ -22,6 +22,12 @@ export type RootStackParamList = {
   MainTabs: undefined;
   ReceiptDetail: { receipt: ReceiptDetail };
   WeeklyAnalysis: undefined;
+  TransactionList:
+    | {
+        accountId?: string;
+        type?: 'income' | 'expense' | 'transfer';
+      }
+    | undefined;
 };
 
 export type MainTabParamList = {
