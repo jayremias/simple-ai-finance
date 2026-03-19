@@ -351,6 +351,45 @@ describe('GET /api/v1/transactions', () => {
     expect(body.data.length).toBe(0);
   });
 
+  test('filters by dateFrom and dateTo (inclusive same-day range)', async () => {
+    const { token } = await createAuthenticatedUserWithOrg();
+    const account = await createAccount(token);
+
+    await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 100,
+      date: '2024-01-16',
+    });
+    await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 200,
+      date: '2024-01-17',
+    });
+    await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 300,
+      date: '2024-01-18',
+    });
+
+    // Same-day range must return the single transaction on that day
+    const res = await app.request('/api/v1/transactions?dateFrom=2024-01-17&dateTo=2024-01-17', {
+      headers: bearerHeader(token),
+    });
+    const body = (await res.json()) as TransactionListResponse;
+    expect(body.data.length).toBe(1);
+    expect(body.data[0]?.date).toBe('2024-01-17');
+
+    // Multi-day range must include both boundary days
+    const res2 = await app.request('/api/v1/transactions?dateFrom=2024-01-16&dateTo=2024-01-17', {
+      headers: bearerHeader(token),
+    });
+    const body2 = (await res2.json()) as TransactionListResponse;
+    expect(body2.data.length).toBe(2);
+  });
+
   test('paginates with cursor', async () => {
     const { token } = await createAuthenticatedUserWithOrg();
     const account = await createAccount(token);

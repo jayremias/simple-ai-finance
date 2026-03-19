@@ -4,7 +4,7 @@ import type {
   TransactionResponse,
   UpdateTransactionInput,
 } from '@moneylens/shared';
-import { and, desc, eq, gt, lt, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lt, lte, or, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { tag } from '@/lib/db/schema/tag';
 import { team } from '@/lib/db/schema/team';
@@ -109,8 +109,8 @@ export async function listTransactions(organizationId: string, input: ListTransa
   if (accountId) conditions.push(eq(transaction.accountId, accountId));
   if (categoryId) conditions.push(eq(transaction.categoryId, categoryId));
   if (type) conditions.push(eq(transaction.type, type));
-  if (dateFrom) conditions.push(gt(transaction.date, dateFrom) || eq(transaction.date, dateFrom));
-  if (dateTo) conditions.push(lt(transaction.date, dateTo) || eq(transaction.date, dateTo));
+  if (dateFrom) conditions.push(gte(transaction.date, dateFrom));
+  if (dateTo) conditions.push(lte(transaction.date, dateTo));
 
   // Cursor: fetch items older than (date, id)
   if (cursor) {
