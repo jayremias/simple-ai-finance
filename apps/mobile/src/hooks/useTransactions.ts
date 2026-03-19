@@ -63,3 +63,16 @@ export function useDeleteTransaction() {
     },
   });
 }
+
+export function usePayees(query: string) {
+  return useQuery({
+    queryKey: ['transaction-payees', query],
+    queryFn: async () => {
+      const res = await api.get<{ data: string[] }>('/transactions/payees', {
+        params: query ? { q: query } : {},
+      });
+      return res.data.data;
+    },
+    enabled: query.length > 0,
+  });
+}

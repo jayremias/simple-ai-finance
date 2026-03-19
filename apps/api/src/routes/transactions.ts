@@ -10,6 +10,7 @@ import {
   createTransaction,
   deleteTransaction,
   getTransactionById,
+  listPayees,
   listTransactions,
   updateTransaction,
 } from '@/services/transactions.service';
@@ -42,6 +43,19 @@ transactions.get('/', async (c) => {
 
   const result = await listTransactions(organizationId, parsed.data);
   return c.json(result);
+});
+
+// GET /transactions/payees
+transactions.get('/payees', async (c) => {
+  const session = c.get('session');
+  const organizationId = session?.activeOrganizationId;
+  if (!organizationId) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
+  }
+
+  const q = c.req.query('q');
+  const data = await listPayees(organizationId, q);
+  return c.json({ data });
 });
 
 // GET /transactions/:id
