@@ -287,7 +287,7 @@ function TransactionEditSheet({
               style={sheetStyles.input}
               value={form.payee}
               onChangeText={(v) => set('payee', v)}
-              placeholder="e.g. Starbucks"
+              placeholder="Payee name"
               placeholderTextColor={Colors.textMuted}
             />
 
@@ -507,7 +507,7 @@ function TransactionFormSheet({
             style={sheetStyles.input}
             value={form.payee}
             onChangeText={(v) => set('payee', v)}
-            placeholder="e.g. Starbucks"
+            placeholder="Payee name"
             placeholderTextColor={Colors.textMuted}
           />
 

@@ -247,7 +247,7 @@ function RuleFormSheet({
             style={styles.input}
             value={form.name}
             onChangeText={(v) => set('name', v)}
-            placeholder="e.g. Netflix"
+            placeholder="Payee name"
             placeholderTextColor={Colors.textMuted}
           />
 
@@ -412,7 +412,7 @@ function RuleFormSheet({
             style={styles.input}
             value={form.payee}
             onChangeText={(v) => set('payee', v)}
-            placeholder="e.g. Netflix"
+            placeholder="Payee name"
             placeholderTextColor={Colors.textMuted}
           />
 
