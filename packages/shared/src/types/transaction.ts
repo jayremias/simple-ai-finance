@@ -4,11 +4,13 @@ import type {
   listTransactionsSchema,
   parsedTransactionItemSchema,
   parseTransactionsResponseSchema,
+  TRANSACTION_TYPES,
   transactionListResponseSchema,
   transactionResponseSchema,
   updateTransactionSchema,
 } from '../schemas/transaction';
 
+export type TransactionType = (typeof TRANSACTION_TYPES)[number];
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
 export type ListTransactionsInput = z.infer<typeof listTransactionsSchema>;

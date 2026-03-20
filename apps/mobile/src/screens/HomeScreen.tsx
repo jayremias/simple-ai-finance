@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { Colors } from '@/theme/colors';
 import { CategoryPicker } from '../components/common/CategoryPicker';
+import { DatePicker } from '../components/common/DatePicker';
 import { TransactionItem } from '../components/common/TransactionItem';
 import { BalanceCard } from '../components/home/BalanceCard';
 import { FeedAISection } from '../components/home/FeedAISection';
@@ -164,10 +165,6 @@ function TransactionEditSheet({
       setError('Enter a valid amount.');
       return;
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) {
-      setError('Date must be YYYY-MM-DD.');
-      return;
-    }
     if (!transaction) return;
     setError(null);
 
@@ -273,13 +270,7 @@ function TransactionEditSheet({
 
             {/* Date */}
             <Text style={sheetStyles.label}>Date</Text>
-            <TextInput
-              style={sheetStyles.input}
-              value={form.date}
-              onChangeText={(v) => set('date', v)}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={Colors.textMuted}
-            />
+            <DatePicker value={form.date} onChange={(date) => set('date', date)} />
 
             {/* Payee */}
             <Text style={sheetStyles.label}>Payee (optional)</Text>
@@ -378,10 +369,6 @@ function TransactionFormSheet({
     }
     if (form.type === 'transfer' && (!form.toAccountId || form.toAccountId === form.accountId)) {
       setError('Select a different destination account.');
-      return;
-    }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) {
-      setError('Date must be YYYY-MM-DD.');
       return;
     }
     setError(null);
@@ -493,13 +480,7 @@ function TransactionFormSheet({
 
           {/* Date */}
           <Text style={sheetStyles.label}>Date</Text>
-          <TextInput
-            style={sheetStyles.input}
-            value={form.date}
-            onChangeText={(v) => set('date', v)}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={Colors.textMuted}
-          />
+          <DatePicker value={form.date} onChange={(date) => set('date', date)} />
 
           {/* Payee */}
           <Text style={sheetStyles.label}>Payee (optional)</Text>
