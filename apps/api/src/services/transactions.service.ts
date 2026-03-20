@@ -128,7 +128,7 @@ export async function listTransactions(organizationId: string, input: ListTransa
     .select()
     .from(transaction)
     .where(and(...conditions))
-    .orderBy(desc(transaction.date), desc(transaction.id))
+    .orderBy(desc(transaction.date), desc(transaction.createdAt))
     .limit(limit + 1); // fetch one extra to detect next page
 
   const hasNextPage = rows.length > limit;

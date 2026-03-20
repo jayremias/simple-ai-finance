@@ -8,7 +8,6 @@ import {
   createTestOrg,
   createTestSession,
   createTestUser,
-  setActiveOrg,
 } from '@/tests/helpers/auth';
 import { truncateAll } from '@/tests/helpers/db';
 
@@ -273,6 +272,38 @@ describe('GET /api/v1/transactions', () => {
     expect(body.nextCursor).toBeNull();
     // Ordered by date DESC
     expect(body.data[0]?.date).toBe('2024-01-03');
+  });
+
+  test('orders same-day transactions by createdAt DESC (newest first)', async () => {
+    const { token } = await createAuthenticatedUserWithOrg();
+    const account = await createAccount(token);
+
+    const first = await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 100,
+      date: '2024-01-01',
+    });
+    const second = await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 200,
+      date: '2024-01-01',
+    });
+    const third = await createTransaction(token, {
+      accountId: account.teamId,
+      type: 'expense',
+      amount: 300,
+      date: '2024-01-01',
+    });
+
+    const res = await app.request('/api/v1/transactions', { headers: bearerHeader(token) });
+    const body = (await res.json()) as TransactionListResponse;
+    expect(body.data.length).toBe(3);
+    // Newest created first
+    expect(body.data[0]?.id).toBe(third.id);
+    expect(body.data[1]?.id).toBe(second.id);
+    expect(body.data[2]?.id).toBe(first.id);
   });
 
   test('filters by accountId', async () => {
