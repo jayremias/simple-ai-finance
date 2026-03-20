@@ -28,6 +28,6 @@ export type MainTabParamList = {
   Home: undefined;
   Accounts: undefined;
   Categories: undefined;
-  Scan: undefined;
+  Recurring: undefined;
   Profile: undefined;
 };
