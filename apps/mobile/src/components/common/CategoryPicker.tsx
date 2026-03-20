@@ -62,7 +62,6 @@ export function CategoryPicker({
             </TouchableOpacity>
           )}
 
-
           {categories.map((cat) => {
             const isActive = selectedParent?.id === cat.id;
             return (
