@@ -23,7 +23,8 @@ export async function createTag(organizationId: string, data: CreateTagInput) {
 
   const [created] = await db.insert(tag).values({ organizationId, name: data.name }).returning();
 
-  return created!;
+  if (!created) throw new Error('Failed to create tag');
+  return created;
 }
 
 export async function deleteTag(id: string, organizationId: string) {

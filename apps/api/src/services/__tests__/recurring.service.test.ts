@@ -1,10 +1,9 @@
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { app } from '@/index';
 import { db } from '@/lib/db';
 import { recurringRule } from '@/lib/db/schema/recurring';
-import { tag } from '@/lib/db/schema/tag';
-import { transaction, transactionTag } from '@/lib/db/schema/transaction';
+import { transaction } from '@/lib/db/schema/transaction';
 import { generateDueTransactions } from '@/services/recurring.service';
 import { createAuthenticatedUserWithOrg } from '@/tests/helpers/auth';
 import { truncateAll } from '@/tests/helpers/db';
@@ -36,7 +35,7 @@ async function createAccount(
   return res.json() as Promise<{ id: string; teamId: string }>;
 }
 
-async function createTag(token: string, name: string): Promise<{ id: string }> {
+async function _createTag(token: string, name: string): Promise<{ id: string }> {
   const res = await app.request('/api/v1/tags', {
     method: 'POST',
     headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },

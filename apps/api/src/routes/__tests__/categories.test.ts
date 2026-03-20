@@ -153,7 +153,8 @@ describe('POST /api/v1/categories', () => {
       headers: bearerHeader(token),
     });
     const tree = (await listRes.json()) as CategoryTreeResponse[];
-    const food = tree.find((c) => c.translationKey === 'food_dining')!;
+    const food = tree.find((c) => c.translationKey === 'food_dining');
+    if (!food) throw new Error('food_dining category not found');
 
     const res = await app.request('/api/v1/categories', {
       method: 'POST',
@@ -186,7 +187,8 @@ describe('POST /api/v1/categories', () => {
       headers: bearerHeader(token),
     });
     const tree = (await listRes.json()) as CategoryTreeResponse[];
-    const child = tree[0]!.children[0]!;
+    const child = tree[0]?.children[0];
+    if (!child) throw new Error('No child category found');
 
     const res = await app.request('/api/v1/categories', {
       method: 'POST',
@@ -230,7 +232,8 @@ describe('PATCH /api/v1/categories/:id', () => {
       headers: bearerHeader(token),
     });
     const tree = (await listRes.json()) as CategoryTreeResponse[];
-    const cat = tree[0]!;
+    const cat = tree[0];
+    if (!cat) throw new Error('No category found');
 
     const res = await app.request(`/api/v1/categories/${cat.id}`, {
       method: 'PATCH',
@@ -246,7 +249,8 @@ describe('PATCH /api/v1/categories/:id', () => {
       headers: bearerHeader(token),
     });
     const tree = (await listRes.json()) as CategoryTreeResponse[];
-    const cat = tree[0]!;
+    const cat = tree[0];
+    if (!cat) throw new Error('No category found');
 
     const res = await app.request(`/api/v1/categories/${cat.id}`, {
       method: 'PATCH',

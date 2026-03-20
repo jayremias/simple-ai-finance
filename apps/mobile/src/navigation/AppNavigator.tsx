@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { LoginScreen } from '../screens/LoginScreen';
 import { ReceiptDetailScreen } from '../screens/ReceiptDetailScreen';
+import { TransactionListScreen } from '../screens/TransactionListScreen';
 import { WeeklyAnalysisScreen } from '../screens/WeeklyAnalysisScreen';
 import { storage } from '../services/storage';
 import { useAuthStore } from '../stores/auth';
@@ -59,6 +60,7 @@ export function AppNavigator() {
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
         <Stack.Screen name="ReceiptDetail" component={ReceiptDetailScreen} />
         <Stack.Screen name="WeeklyAnalysis" component={WeeklyAnalysisScreen} />
+        <Stack.Screen name="TransactionList" component={TransactionListScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
