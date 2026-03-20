@@ -13,9 +13,11 @@ import {
   View,
 } from 'react-native';
 import { useCategories } from '@/hooks/useCategories';
+import { useCreateTag, useTags } from '@/hooks/useTags';
 import { useDeleteTransaction, useUpdateTransaction } from '@/hooks/useTransactions';
 import { Colors } from '@/theme/colors';
 import { CategoryPicker } from './CategoryPicker';
+import { TagPicker } from './TagPicker';
 
 type TxType = 'expense' | 'income' | 'transfer';
 
@@ -37,6 +39,7 @@ type EditFormState = {
   date: string;
   payee: string;
   notes: string;
+  tagIds: string[];
 };
 
 interface TransactionEditSheetProps {
@@ -46,6 +49,8 @@ interface TransactionEditSheetProps {
 
 export function TransactionEditSheet({ transaction, onClose }: TransactionEditSheetProps) {
   const { data: categories = [] } = useCategories();
+  const { data: allTags = [] } = useTags();
+  const { mutateAsync: createTagMutation } = useCreateTag();
   const { mutate: updateTransaction, isPending: isUpdating } = useUpdateTransaction();
   const { mutate: deleteTransaction, isPending: isDeleting } = useDeleteTransaction();
 
@@ -57,6 +62,7 @@ export function TransactionEditSheet({ transaction, onClose }: TransactionEditSh
     date: '',
     payee: '',
     notes: '',
+    tagIds: [],
   });
   const [error, setError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -72,6 +78,7 @@ export function TransactionEditSheet({ transaction, onClose }: TransactionEditSh
       date: transaction.date,
       payee: transaction.payee ?? '',
       notes: transaction.notes ?? '',
+      tagIds: transaction.tags.map((tag) => tag.id),
     });
     setError(null);
     setIsReady(true);
@@ -83,7 +90,7 @@ export function TransactionEditSheet({ transaction, onClose }: TransactionEditSh
   }
 
   function set<K extends keyof EditFormState>(key: K, value: EditFormState[K]) {
-    setForm((f) => ({ ...f, [key]: value }));
+    setForm((formState) => ({ ...formState, [key]: value }));
   }
 
   function handleSave() {
@@ -108,6 +115,7 @@ export function TransactionEditSheet({ transaction, onClose }: TransactionEditSh
           date: form.date,
           payee: form.payee.trim() || null,
           notes: form.notes.trim() || null,
+          tagIds: form.tagIds,
         },
       },
       {
@@ -137,7 +145,7 @@ export function TransactionEditSheet({ transaction, onClose }: TransactionEditSh
     ? (TYPE_COLOR[transaction.type as TxType] ?? Colors.brandBlue)
     : Colors.brandBlue;
   const typeLabel = transaction
-    ? (TYPE_LABELS.find((t) => t.value === transaction.type)?.label ?? transaction.type)
+    ? (TYPE_LABELS.find((label) => label.value === transaction.type)?.label ?? transaction.type)
     : '';
 
   return (
@@ -177,7 +185,7 @@ export function TransactionEditSheet({ transaction, onClose }: TransactionEditSh
             <TextInput
               style={[styles.amountInput, { color: accentColor }]}
               value={form.amount}
-              onChangeText={(v) => set('amount', v)}
+              onChangeText={(value) => set('amount', value)}
               placeholder="0.00"
               placeholderTextColor={Colors.textMuted}
               keyboardType="decimal-pad"
@@ -198,7 +206,7 @@ export function TransactionEditSheet({ transaction, onClose }: TransactionEditSh
             <TextInput
               style={styles.input}
               value={form.date}
-              onChangeText={(v) => set('date', v)}
+              onChangeText={(value) => set('date', value)}
               placeholder="YYYY-MM-DD"
               placeholderTextColor={Colors.textMuted}
             />
@@ -207,7 +215,7 @@ export function TransactionEditSheet({ transaction, onClose }: TransactionEditSh
             <TextInput
               style={styles.input}
               value={form.payee}
-              onChangeText={(v) => set('payee', v)}
+              onChangeText={(value) => set('payee', value)}
               placeholder="e.g. Starbucks"
               placeholderTextColor={Colors.textMuted}
             />
@@ -216,10 +224,28 @@ export function TransactionEditSheet({ transaction, onClose }: TransactionEditSh
             <TextInput
               style={[styles.input, styles.notesInput]}
               value={form.notes}
-              onChangeText={(v) => set('notes', v)}
+              onChangeText={(value) => set('notes', value)}
               placeholder="Add a note…"
               placeholderTextColor={Colors.textMuted}
               multiline
+            />
+
+            <Text style={styles.label}>Tags (optional)</Text>
+            <TagPicker
+              allTags={allTags}
+              selectedIds={form.tagIds}
+              onToggle={(id) =>
+                set(
+                  'tagIds',
+                  form.tagIds.includes(id)
+                    ? form.tagIds.filter((tagId) => tagId !== id)
+                    : [...form.tagIds, id]
+                )
+              }
+              onCreateAndAdd={async (name) => {
+                const tag = await createTagMutation(name);
+                set('tagIds', [...form.tagIds, tag.id]);
+              }}
             />
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
