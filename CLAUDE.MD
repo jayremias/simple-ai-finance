@@ -342,3 +342,4 @@ src/
 - You can ask for human interaction to solve things. I am a experience 20+ yrs developer.
 - Never use workarounds — if something doesn't work, ask for help. We are a team.
 - **No emojis in UI** — always use an icon library (the project uses `@expo/vector-icons` / Ionicons). Never use emoji characters as icons or decorative elements in mobile screens.
+- **One thing per file** — components, classes, error types, and other named units each live in their own file. Never bundle multiple unrelated exports into a single file.

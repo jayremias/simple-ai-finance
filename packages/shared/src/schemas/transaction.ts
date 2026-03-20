@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { tagResponseSchema } from './tag';
 
-const TRANSACTION_TYPES = ['income', 'expense', 'transfer'] as const;
+export const TRANSACTION_TYPES = ['income', 'expense', 'transfer'] as const;
 
 export const createTransactionSchema = z.object({
   accountId: z.string(),

@@ -50,25 +50,15 @@ categories.post('/', async (c) => {
     );
   }
 
-  try {
-    const created = await createCategory(organizationId, parsed.data);
-    return c.json(
-      {
-        ...created,
-        createdAt: created.createdAt.toISOString(),
-        updatedAt: created.updatedAt.toISOString(),
-      },
-      201
-    );
-  } catch (err) {
-    if (
-      err instanceof Error &&
-      (err as NodeJS.ErrnoException & { code?: string }).code === 'INVALID_PARENT'
-    ) {
-      return c.json({ error: { code: 'INVALID_PARENT', message: err.message } }, 400);
-    }
-    throw err;
-  }
+  const created = await createCategory(organizationId, parsed.data);
+  return c.json(
+    {
+      ...created,
+      createdAt: created.createdAt.toISOString(),
+      updatedAt: created.updatedAt.toISOString(),
+    },
+    201
+  );
 });
 
 // PATCH /categories/:id

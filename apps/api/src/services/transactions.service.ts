@@ -9,6 +9,7 @@ import { db } from '@/lib/db';
 import { tag } from '@/lib/db/schema/tag';
 import { team } from '@/lib/db/schema/team';
 import { transaction, transactionTag } from '@/lib/db/schema/transaction';
+import { DatabaseError, InvalidInputError, NotFoundError } from '@/lib/errors';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -174,15 +175,13 @@ export async function createTransaction(
     .limit(1);
 
   if (!acct) {
-    throw Object.assign(new Error('Account not found'), { code: 'NOT_FOUND' });
+    throw new NotFoundError('Account not found');
   }
 
   // Transfer requires a destination account
   if (type === 'transfer') {
     if (!toAccountId) {
-      throw Object.assign(new Error('toAccountId is required for transfers'), {
-        code: 'INVALID_TRANSFER',
-      });
+      throw new InvalidInputError('INVALID_TRANSFER', 'toAccountId is required for transfers');
     }
 
     const [toAcct] = await db
@@ -192,7 +191,7 @@ export async function createTransaction(
       .limit(1);
 
     if (!toAcct) {
-      throw Object.assign(new Error('Destination account not found'), { code: 'NOT_FOUND' });
+      throw new NotFoundError('Destination account not found');
     }
   }
 
@@ -215,7 +214,7 @@ export async function createTransaction(
       })
       .returning();
 
-    if (!outflow) throw new Error('Failed to create transaction');
+    if (!outflow) throw new DatabaseError('Failed to create transaction');
 
     // Create paired inflow for transfers
     if (type === 'transfer' && toAccountId && transferId) {

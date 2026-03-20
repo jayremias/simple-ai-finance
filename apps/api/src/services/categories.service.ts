@@ -3,6 +3,7 @@ import { DEFAULT_CATEGORIES } from '@moneylens/shared';
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { category } from '@/lib/db/schema/category';
+import { DatabaseError, InvalidInputError } from '@/lib/errors';
 
 // ---------------------------------------------------------------------------
 // Queries
@@ -59,16 +60,18 @@ export async function createCategory(organizationId: string, data: CreateCategor
     const parent = await getCategoryById(data.parentId, organizationId);
 
     if (!parent) {
-      throw Object.assign(new Error('Parent category not found in this organization'), {
-        code: 'INVALID_PARENT',
-      });
+      throw new InvalidInputError(
+        'INVALID_PARENT',
+        'Parent category not found in this organization'
+      );
     }
 
     // No nesting beyond one level
     if (parent.parentId !== null) {
-      throw Object.assign(new Error('Cannot nest categories more than one level deep'), {
-        code: 'INVALID_PARENT',
-      });
+      throw new InvalidInputError(
+        'INVALID_PARENT',
+        'Cannot nest categories more than one level deep'
+      );
     }
   }
 
@@ -86,7 +89,8 @@ export async function createCategory(organizationId: string, data: CreateCategor
     })
     .returning();
 
-  return created!;
+  if (!created) throw new DatabaseError('Failed to create category');
+  return created;
 }
 
 export async function updateCategory(

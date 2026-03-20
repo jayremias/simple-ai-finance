@@ -82,21 +82,8 @@ transactions.post('/', async (c) => {
     );
   }
 
-  try {
-    const tx = await createTransaction(organizationId, parsed.data);
-    return c.json(tx, 201);
-  } catch (err) {
-    if (err instanceof Error) {
-      const code = (err as { code?: string }).code;
-      if (code === 'NOT_FOUND') {
-        return c.json({ error: { code: 'NOT_FOUND', message: err.message } }, 404);
-      }
-      if (code === 'INVALID_TRANSFER') {
-        return c.json({ error: { code: 'INVALID_TRANSFER', message: err.message } }, 400);
-      }
-    }
-    throw err;
-  }
+  const tx = await createTransaction(organizationId, parsed.data);
+  return c.json(tx, 201);
 });
 
 // PATCH /transactions/:id

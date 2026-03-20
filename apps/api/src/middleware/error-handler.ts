@@ -2,6 +2,7 @@ import type { Context, ErrorHandler, NotFoundHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { ZodError } from 'zod';
 import { env } from '@/env';
+import { AppError } from '@/lib/errors';
 
 interface ErrorResponse {
   error: {
@@ -34,6 +35,10 @@ function buildErrorResponse(
 }
 
 export const onError: ErrorHandler = (err, c) => {
+  if (err instanceof AppError) {
+    return buildErrorResponse(c, err.statusCode, err.code, err.message);
+  }
+
   if (err instanceof HTTPException) {
     return buildErrorResponse(
       c,
