@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Colors } from '@/theme/colors';
 import { usePayees } from '@/hooks/useTransactions';
+import { Colors } from '@/theme/colors';
 
 export function PayeePicker({
   value,

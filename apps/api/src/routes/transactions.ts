@@ -61,7 +61,13 @@ transactions.get('/payees', async (c) => {
   const parsed = payeeQuerySchema.safeParse(c.req.query());
   if (!parsed.success) {
     return c.json(
-      { error: { code: 'VALIDATION_ERROR', message: 'Invalid query params', details: parsed.error.flatten() } },
+      {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid query params',
+          details: parsed.error.flatten(),
+        },
+      },
       400
     );
   }

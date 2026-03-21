@@ -4,7 +4,7 @@ import type {
   TransactionResponse,
   UpdateTransactionInput,
 } from '@moneylens/shared';
-import { and, desc, eq, gt, gte, ilike, isNotNull, lt, lte, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, ilike, isNotNull, lt, lte, or, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { tag } from '@/lib/db/schema/tag';
 import { team } from '@/lib/db/schema/team';
