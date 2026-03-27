@@ -17,6 +17,7 @@ import { useCreateTag, useTags } from '@/hooks/useTags';
 import { useDeleteTransaction, useUpdateTransaction } from '@/hooks/useTransactions';
 import { Colors } from '@/theme/colors';
 import { CategoryPicker } from './CategoryPicker';
+import { PayeePicker } from './PayeePicker';
 import { TagPicker } from './TagPicker';
 
 type TxType = 'expense' | 'income' | 'transfer';
@@ -212,13 +213,7 @@ export function TransactionEditSheet({ transaction, onClose }: TransactionEditSh
             />
 
             <Text style={styles.label}>Payee (optional)</Text>
-            <TextInput
-              style={styles.input}
-              value={form.payee}
-              onChangeText={(value) => set('payee', value)}
-              placeholder="e.g. Starbucks"
-              placeholderTextColor={Colors.textMuted}
-            />
+            <PayeePicker value={form.payee} onChange={(value) => set('payee', value)} />
 
             <Text style={styles.label}>Notes (optional)</Text>
             <TextInput

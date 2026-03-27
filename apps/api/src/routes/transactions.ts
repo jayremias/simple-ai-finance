@@ -4,15 +4,21 @@ import {
   updateTransactionSchema,
 } from '@moneylens/shared';
 import { Hono } from 'hono';
+import { z } from 'zod';
 import type { AuthVariables } from '@/middleware/auth';
 import { requireAuth } from '@/middleware/auth';
 import {
   createTransaction,
   deleteTransaction,
   getTransactionById,
+  listPayees,
   listTransactions,
   updateTransaction,
 } from '@/services/transactions.service';
+
+const payeeQuerySchema = z.object({
+  q: z.string().trim().min(1).max(200).optional(),
+});
 
 const transactions = new Hono<{ Variables: AuthVariables }>()
   .basePath('/transactions')
@@ -42,6 +48,32 @@ transactions.get('/', async (c) => {
 
   const result = await listTransactions(organizationId, parsed.data);
   return c.json(result);
+});
+
+// GET /transactions/payees
+transactions.get('/payees', async (c) => {
+  const session = c.get('session');
+  const organizationId = session?.activeOrganizationId;
+  if (!organizationId) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
+  }
+
+  const parsed = payeeQuerySchema.safeParse(c.req.query());
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid query params',
+          details: parsed.error.flatten(),
+        },
+      },
+      400
+    );
+  }
+
+  const data = await listPayees(organizationId, parsed.data.q);
+  return c.json({ data });
 });
 
 // GET /transactions/:id

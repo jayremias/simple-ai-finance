@@ -343,3 +343,4 @@ src/
 - Never use workarounds — if something doesn't work, ask for help. We are a team.
 - **No emojis in UI** — always use an icon library (the project uses `@expo/vector-icons` / Ionicons). Never use emoji characters as icons or decorative elements in mobile screens.
 - **One thing per file** — components, classes, error types, and other named units each live in their own file. Never bundle multiple unrelated exports into a single file.
+- **No abbreviated variable names** — always use descriptive names. Never use single-letter or shortened names like `v`, `e`, `t`, `cb`, `fn`, `val`, `obj`, etc. Write `value`, `event`, `transaction`, `callback`, `onPress`, etc.
