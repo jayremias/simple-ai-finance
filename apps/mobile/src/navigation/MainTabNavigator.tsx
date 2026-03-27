@@ -7,6 +7,7 @@ import { CategoriesScreen } from '../screens/CategoriesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { RecurringScreen } from '../screens/RecurringScreen';
+import { ScanScreen } from '../screens/ScanScreen';
 import type { MainTabParamList } from '../types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -50,6 +51,15 @@ export function MainTabNavigator() {
         options={{
           tabBarIcon: ({ focused }) => (
             <TabBarIcon name={focused ? 'wallet' : 'wallet-outline'} focused={focused} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Scan"
+        component={ScanScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabBarIcon name={focused ? 'scan' : 'scan-outline'} focused={focused} />
           ),
         }}
       />
