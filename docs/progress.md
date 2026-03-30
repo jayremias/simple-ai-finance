@@ -214,11 +214,16 @@
 - [ ] Mobile: Pending review queue `[P2]`
 
 #### Receipt Scanning `[P1 API · P2 Mobile]`
-- [ ] `POST /api/v1/receipts/upload-url` — S3 pre-signed URL `[P1]`
-- [ ] `POST /api/v1/receipts/extract` — AI OCR pipeline `[P1]`
-- [ ] Mobile: Camera capture (expo-camera / react-native-vision-camera) `[P2]`
-- [ ] Mobile: Receipt review form (pre-filled, editable before save) `[P2]`
-- [ ] Mobile: Scan tab wired up `[P2]`
+- [x] MinIO added to docker-compose (dev S3, port 9000 / console 9001)
+- [x] `apps/api/src/lib/s3/` — `getPresignedUploadUrl`, `getObject` (AWS SDK + MinIO compatible)
+- [x] `POST /api/v1/receipts/upload-url` — S3 pre-signed URL `[P1]`
+- [x] `POST /api/v1/receipts/extract` — AI OCR pipeline `[P1]`
+- [x] Route tests (5 tests, mocked S3 + AI) `[P1]`
+- [x] `packages/shared/src/schemas/receipt.ts` — `uploadUrlResponseSchema`, `extractReceiptSchema`
+- [x] Mobile: `expo-camera` installed; `ScanScreen` — camera + gallery + flash + processing overlay `[P2]`
+- [x] Mobile: `ReceiptReviewScreen` — pre-filled editable form, confidence warning, save as transaction `[P2]`
+- [x] Mobile: `Scan` tab wired up in `MainTabNavigator` (camera icon) `[P2]`
+- [x] Mobile: `useGetUploadUrl`, `useExtractReceipt` hooks; `s3Upload` service `[P2]`
 
 ### Phase 4 — Import & Sharing
 

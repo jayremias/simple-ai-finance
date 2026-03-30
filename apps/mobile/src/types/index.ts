@@ -1,26 +1,15 @@
+import type { ParsedTransactionItem } from '@moneylens/shared';
+
 export interface WeeklyData {
   day: string;
   amount: number;
   isActive?: boolean;
 }
 
-export interface AIInsight {
-  message: string;
-  type: 'info' | 'warning' | 'success';
-}
-
-export interface ReceiptDetail {
-  imageUri: string;
-  category: string;
-  amount: number;
-  date: string;
-  insight: AIInsight;
-}
-
 export type RootStackParamList = {
   Login: undefined;
   MainTabs: undefined;
-  ReceiptDetail: { receipt: ReceiptDetail };
+  ReceiptReview: { items: ParsedTransactionItem[]; sourceConfidence: number };
   WeeklyAnalysis: undefined;
   TransactionList:
     | {
@@ -33,6 +22,7 @@ export type RootStackParamList = {
 export type MainTabParamList = {
   Home: undefined;
   Accounts: undefined;
+  Scan: undefined;
   Categories: undefined;
   Recurring: undefined;
   Profile: undefined;
