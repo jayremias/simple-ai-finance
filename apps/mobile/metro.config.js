@@ -15,4 +15,10 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
+// Bun workspaces don't create node_modules symlinks — map workspace packages
+// explicitly so Metro can find them.
+config.resolver.extraNodeModules = {
+  '@moneylens/shared': path.resolve(monorepoRoot, 'packages/shared'),
+};
+
 module.exports = config;
