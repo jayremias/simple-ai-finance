@@ -42,6 +42,54 @@ bun dev
 
 The API will be available at `http://localhost:3000/api/v1/health`.
 
+## Local Object Storage (MinIO)
+
+Receipt and bank statement uploads use S3-compatible storage. In local development this is provided by [MinIO](https://min.io/), which is included in `docker-compose.yml` (started automatically with `docker compose up -d`).
+
+### Create the required buckets
+
+Open the MinIO console at `http://localhost:9001` and log in with:
+
+| Field    | Value          |
+| -------- | -------------- |
+| Username | `moneylens`    |
+| Password | `moneylens123` |
+
+Go to **Object Browser → Create Bucket** and create:
+
+| Bucket name  | Used for                       |
+| ------------ | ------------------------------ |
+| `receipts`   | Receipt image / PDF uploads    |
+| `statements` | Bank statement PDF uploads     |
+
+Alternatively, use the MinIO CLI:
+
+```bash
+# Install mc (MinIO client) — macOS
+brew install minio/stable/mc
+
+# Register the local instance
+mc alias set local http://localhost:9000 moneylens moneylens123
+
+# Create buckets
+mc mb local/receipts
+mc mb local/statements
+```
+
+### Environment variables
+
+The following variables in `apps/api/.env` point the API at the local MinIO instance (already set if you copied `.env.example`):
+
+```env
+S3_ENDPOINT=http://localhost:9000
+AWS_ACCESS_KEY_ID=moneylens
+AWS_SECRET_ACCESS_KEY=moneylens123
+AWS_REGION=us-east-1
+S3_RECEIPT_BUCKET=receipts
+```
+
+> In production, remove `S3_ENDPOINT` and replace the credentials with real AWS IAM keys. The bucket names stay the same.
+
 ## Project Structure
 
 ```
@@ -79,7 +127,7 @@ moneylens/
 │           ├── types/       # TypeScript interfaces
 │           └── constants/   # Enums, defaults
 │
-├── docker-compose.yml       # Local PostgreSQL
+├── docker-compose.yml       # Local PostgreSQL + Redis + MinIO
 ├── turbo.json               # Turborepo config
 └── biome.json               # Linter/formatter config
 ```
