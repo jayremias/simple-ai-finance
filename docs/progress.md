@@ -1,6 +1,6 @@
 # MoneyLens — Build Progress
 
-> Last updated: 2026-03-18 (session 5)
+> Last updated: 2026-03-27 (session 6)
 
 ---
 
@@ -173,6 +173,26 @@
 - [x] `lib/ai/ocr/index.ts` — routes by MIME type (PDF vs image)
 - [x] `lib/ai/parse.ts` — cheap model parses extracted text → `ParsedTransactionItem[]` with per-item confidence + sourceConfidence
 
+### API — Receipts (CAB-14)
+- [x] MinIO via Docker for local S3-compatible storage
+- [x] `lib/s3/` — `getPresignedUploadUrl`, `getObject` (AWS SDK, `forcePathStyle` for MinIO)
+- [x] `POST /api/v1/receipts/upload-url` — returns pre-signed URL + key
+- [x] `POST /api/v1/receipts/extract` — downloads from S3, runs OCR, parses, returns `ParsedTransactionItem[]`
+- [x] Tests: 5 route tests (mocked S3 + AI)
+
+### Mobile — Receipt Scanning (CAB-15)
+- [x] ScanScreen: camera capture + gallery picker + flash toggle + processing overlay
+- [x] ReceiptReviewScreen: pre-filled editable form, low-confidence warning, saves as transaction
+- [x] `useGetUploadUrl`, `useExtractReceipt` hooks
+- [x] `s3Upload.ts` — direct PUT upload to pre-signed URL
+- [x] Scan tab in bottom navigation
+
+### API — Bank Statement Import (CAB-16)
+- [x] `POST /api/v1/statements/upload-url` — generates `statements/{uuid}.pdf` pre-signed key
+- [x] `POST /api/v1/statements/import` — OCR → parse → match against existing transactions
+- [x] Matching: Jaccard word-token similarity (0.6 threshold) + ±3 day date tolerance
+- [x] Tests: 12 unit tests for `matchTransactions` + 6 route tests
+
 ---
 
 ### Mobile — Transactions (HomeScreen)
@@ -228,8 +248,9 @@
 ### Phase 4 — Import & Sharing
 
 #### Bank Statement Import `[P1 API · P2 Mobile]`
-- [ ] PDF upload + parsing endpoint `[P1]`
-- [ ] Transaction matching logic (amount + date + description similarity) `[P1]`
+- [x] PDF upload + parsing endpoint (`POST /api/v1/statements/upload-url`) `[P1]`
+- [x] Transaction matching logic (Jaccard similarity + ±3 day date tolerance) `[P1]`
+- [x] `POST /api/v1/statements/import` — returns matched/missing/extra `[P1]`
 - [ ] Mobile: Import review UI (matched / missing / extra) `[P2]`
 - [ ] Mobile: Bulk-add missing transactions `[P2]`
 
