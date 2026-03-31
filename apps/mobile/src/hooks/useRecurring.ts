@@ -12,12 +12,11 @@ const QUERY_KEY = 'recurring';
 export function useRecurringRules(params: { accountId?: string; isActive?: boolean } = {}) {
   return useQuery({
     queryKey: [QUERY_KEY, params],
-    queryFn: async () => {
-      const query: Record<string, string> = {};
-      if (params.accountId) query.accountId = params.accountId;
-      if (params.isActive !== undefined) query.isActive = String(params.isActive);
-      const res = await api.get<RecurringRuleListResponse>('/recurring', { params: query });
-      return res.data;
+    queryFn: () => {
+      const searchParams: Record<string, string> = {};
+      if (params.accountId) searchParams.accountId = params.accountId;
+      if (params.isActive !== undefined) searchParams.isActive = String(params.isActive);
+      return api.get('recurring', { searchParams }).json<RecurringRuleListResponse>();
     },
   });
 }
@@ -25,10 +24,8 @@ export function useRecurringRules(params: { accountId?: string; isActive?: boole
 export function useCreateRecurringRule() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: CreateRecurringRuleInput) => {
-      const res = await api.post<RecurringRuleResponse>('/recurring', data);
-      return res.data;
-    },
+    mutationFn: (data: CreateRecurringRuleInput) =>
+      api.post('recurring', { json: data }).json<RecurringRuleResponse>(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [QUERY_KEY] }),
   });
 }
@@ -36,10 +33,8 @@ export function useCreateRecurringRule() {
 export function useUpdateRecurringRule() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateRecurringRuleInput }) => {
-      const res = await api.patch<RecurringRuleResponse>(`/recurring/${id}`, data);
-      return res.data;
-    },
+    mutationFn: ({ id, data }: { id: string; data: UpdateRecurringRuleInput }) =>
+      api.patch(`recurring/${id}`, { json: data }).json<RecurringRuleResponse>(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [QUERY_KEY] }),
   });
 }
@@ -47,9 +42,7 @@ export function useUpdateRecurringRule() {
 export function useDeleteRecurringRule() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/recurring/${id}`);
-    },
+    mutationFn: (id: string) => api.delete(`recurring/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [QUERY_KEY] }),
   });
 }
@@ -57,10 +50,7 @@ export function useDeleteRecurringRule() {
 export function usePauseRecurringRule() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.post<RecurringRuleResponse>(`/recurring/${id}/pause`);
-      return res.data;
-    },
+    mutationFn: (id: string) => api.post(`recurring/${id}/pause`).json<RecurringRuleResponse>(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [QUERY_KEY] }),
   });
 }
@@ -68,10 +58,7 @@ export function usePauseRecurringRule() {
 export function useResumeRecurringRule() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.post<RecurringRuleResponse>(`/recurring/${id}/resume`);
-      return res.data;
-    },
+    mutationFn: (id: string) => api.post(`recurring/${id}/resume`).json<RecurringRuleResponse>(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [QUERY_KEY] }),
   });
 }

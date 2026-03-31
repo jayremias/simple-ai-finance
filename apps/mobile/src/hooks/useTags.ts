@@ -5,20 +5,14 @@ import { api } from '@/services/api';
 export function useTags() {
   return useQuery({
     queryKey: ['tags'],
-    queryFn: async () => {
-      const res = await api.get<TagResponse[]>('/tags');
-      return res.data;
-    },
+    queryFn: () => api.get('tags').json<TagResponse[]>(),
   });
 }
 
 export function useCreateTag() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (name: string) => {
-      const res = await api.post<TagResponse>('/tags', { name });
-      return res.data;
-    },
+    mutationFn: (name: string) => api.post('tags', { json: { name } }).json<TagResponse>(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tags'] });
     },
