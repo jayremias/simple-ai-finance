@@ -1,14 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/theme/colors';
 
 interface HomeHeaderProps {
   userName: string;
+  badgeCount?: number;
   onNotification: () => void;
 }
 
-export function HomeHeader({ userName, onNotification }: HomeHeaderProps) {
+export function HomeHeader({ userName, badgeCount = 0, onNotification }: HomeHeaderProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -24,6 +25,11 @@ export function HomeHeader({ userName, onNotification }: HomeHeaderProps) {
       </View>
       <TouchableOpacity style={styles.notificationBtn} onPress={onNotification}>
         <Ionicons name="notifications-outline" size={22} color={Colors.textPrimary} />
+        {badgeCount > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{badgeCount > 9 ? '9+' : badgeCount}</Text>
+          </View>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -68,5 +74,25 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceBg,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: Colors.danger,
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: Colors.darkBg,
+  },
+  badgeText: {
+    color: Colors.textPrimary,
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: Platform.OS === 'ios' ? 12 : 14,
   },
 });

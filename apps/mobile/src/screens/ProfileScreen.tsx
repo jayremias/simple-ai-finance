@@ -1,15 +1,25 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useMyInvitations } from '@/hooks/useSharing';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { authService } from '@/services/auth';
 import { storage } from '@/services/storage';
 import { useAuthStore } from '@/stores/auth';
 import { Colors } from '@/theme/colors';
+import type { RootStackParamList } from '@/types';
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { data: profile, isLoading, error } = useUserProfile();
+  const { data: invitations } = useMyInvitations();
   const { token, clearAuth } = useAuthStore();
+
+  const pendingCount =
+    invitations?.filter((invitation) => invitation.status === 'pending').length ?? 0;
 
   async function handleSignOut() {
     if (token) {
@@ -41,6 +51,31 @@ export function ProfileScreen() {
             <Row label="Currency" value={profile.defaultCurrency} />
             <Row label="Locale" value={profile.locale} />
           </View>
+
+          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Workspace')}>
+            <View style={styles.invitationsRow}>
+              <Ionicons name="people-outline" size={18} color={Colors.textSecondary} />
+              <Text style={styles.invitationsLabel}>Workspace</Text>
+              <View style={styles.invitationsRight}>
+                <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Invitations')}>
+            <View style={styles.invitationsRow}>
+              <Ionicons name="mail-outline" size={18} color={Colors.textSecondary} />
+              <Text style={styles.invitationsLabel}>Invitations</Text>
+              <View style={styles.invitationsRight}>
+                {pendingCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{pendingCount}</Text>
+                  </View>
+                )}
+                <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+              </View>
+            </View>
+          </TouchableOpacity>
 
           <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
             <Text style={styles.signOutText}>Sign Out</Text>
@@ -131,6 +166,36 @@ const styles = StyleSheet.create({
     color: Colors.danger,
     fontSize: 16,
     fontWeight: '600',
+  },
+  invitationsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  invitationsLabel: {
+    flex: 1,
+    color: Colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  invitationsRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  badge: {
+    backgroundColor: Colors.brandBlue,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  badgeText: {
+    color: Colors.textPrimary,
+    fontSize: 11,
+    fontWeight: '700',
   },
   errorText: {
     color: Colors.danger,

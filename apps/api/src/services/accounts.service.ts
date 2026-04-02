@@ -27,6 +27,7 @@ export async function createAccount(
       id: crypto.randomUUID(),
       teamId,
       userId,
+      role: 'owner',
       createdAt: new Date(),
     });
 
@@ -179,7 +180,9 @@ export async function resolveUserAccountRole(
       .where(and(eq(teamMember.teamId, account.teamId), eq(teamMember.userId, userId)))
       .limit(1);
 
-    return teamMembership ? 'viewer' : null;
+    if (!teamMembership) return null;
+    const teamRole = teamMembership.role as 'owner' | 'editor' | 'viewer';
+    return teamRole;
   }
 
   // Map org role to account role

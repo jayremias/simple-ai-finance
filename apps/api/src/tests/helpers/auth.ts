@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { session, user } from '@/lib/db/schema';
 import { member, organization } from '@/lib/db/schema/organization';
+import { teamMember } from '@/lib/db/schema/team';
 import { seedDefaultCategories } from '@/services/categories.service';
 
 type CreateTestUserOptions = {
@@ -123,6 +124,54 @@ export async function createAuthenticatedUserWithOrg(options: CreateTestUserOpti
   await seedDefaultCategories(org.id);
   const token = await createTestSession(testUser.id, { activeOrganizationId: org.id });
   return { user: testUser, org, token };
+}
+
+/**
+ * Adds a user to an existing organization (bypasses BA invitation flow).
+ * Use this to set up workspace-level sharing scenarios in tests.
+ */
+export async function createTestOrgMember(
+  organizationId: string,
+  userId: string,
+  role: 'owner' | 'editor' | 'member' | 'viewer' = 'member'
+) {
+  const [created] = await db
+    .insert(member)
+    .values({
+      id: crypto.randomUUID(),
+      organizationId,
+      userId,
+      role,
+      createdAt: new Date(),
+    })
+    .returning();
+
+  if (!created) throw new Error('Failed to create test org member');
+  return created;
+}
+
+/**
+ * Adds a user as a direct team member of an account (bypasses BA invitation flow).
+ * Use this to set up sharing scenarios in tests.
+ */
+export async function createTestTeamMember(
+  teamId: string,
+  userId: string,
+  role: 'owner' | 'editor' | 'viewer' = 'viewer'
+) {
+  const [created] = await db
+    .insert(teamMember)
+    .values({
+      id: crypto.randomUUID(),
+      teamId,
+      userId,
+      role,
+      createdAt: new Date(),
+    })
+    .returning();
+
+  if (!created) throw new Error('Failed to create test team member');
+  return created;
 }
 
 /**

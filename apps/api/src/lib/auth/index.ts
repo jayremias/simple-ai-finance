@@ -2,13 +2,15 @@ import { expo } from '@better-auth/expo';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { admin, bearer, organization } from 'better-auth/plugins';
-import { eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { env as rootEnv } from '@/env';
 import { db } from '@/lib/db';
 import {
+  invitation as invitationTable,
   member as memberTable,
   organization as organizationTable,
 } from '@/lib/db/schema/organization';
+import { teamMember as teamMemberTable } from '@/lib/db/schema/team';
 import { sendEmail } from '@/lib/email';
 import { env } from './env';
 import { ac, editor, owner, viewer } from './permissions';
@@ -169,8 +171,50 @@ export const auth = betterAuth({
       roles: { owner, editor, viewer },
       allowUserToCreateOrganization: true,
       creatorRole: 'owner',
+      async sendInvitationEmail({ invitation, organization: inviteOrg, inviter }) {
+        // TODO: Send actual invitation email (deferred to separate issue)
+        console.log(
+          `[invite] ${inviter.user.name} invited ${invitation.email} to ${inviteOrg.name} as ${invitation.role}`
+        );
+
+        try {
+          const { createNotificationForEmail } = await import('@/services/notification.service');
+          await createNotificationForEmail({
+            email: invitation.email,
+            type: 'invitation_received',
+            title: 'New Invitation',
+            message: `${inviter.user.name} invited you to ${inviteOrg.name}`,
+            navigateTo: 'Invitations',
+            metadata: JSON.stringify({
+              invitationId: invitation.id,
+              organizationId: inviteOrg.id,
+            }),
+          });
+        } catch (notificationError) {
+          console.error('Failed to create invitation notification:', notificationError);
+        }
+      },
       teams: {
         enabled: true,
+      },
+      organizationHooks: {
+        afterAddTeamMember: async ({ teamMember, team, user }) => {
+          // When BA adds a team member (e.g. via accept-invitation with teamId),
+          // look up the invitation to determine the intended role and apply it.
+          const [matchedInvitation] = await db
+            .select()
+            .from(invitationTable)
+            .where(and(eq(invitationTable.teamId, team.id), eq(invitationTable.email, user.email)))
+            .orderBy(desc(invitationTable.createdAt))
+            .limit(1);
+
+          const role = matchedInvitation?.role ?? 'viewer';
+
+          await db
+            .update(teamMemberTable)
+            .set({ role })
+            .where(eq(teamMemberTable.id, teamMember.id));
+        },
       },
     }),
   ],

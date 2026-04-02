@@ -19,6 +19,11 @@ export type {
   UpdateRecurringRuleInput,
 } from './recurring';
 
+export type {
+  AccountMemberResponse,
+  AccountMembersListResponse,
+} from './sharing';
+
 export type { CreateTagInput, TagResponse } from './tag';
 
 export type {

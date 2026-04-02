@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AccountMembersSection } from '@/components/account/AccountMembersSection';
 import {
   useAccounts,
   useCreateAccount,
@@ -315,6 +316,8 @@ function AccountFormSheet({
                 <Text style={styles.submitText}>{isEdit ? 'Save Changes' : 'Create Account'}</Text>
               )}
             </TouchableOpacity>
+
+            {isEdit && account && <AccountMembersSection accountId={account.id} />}
           </ScrollView>
         )}
       </View>

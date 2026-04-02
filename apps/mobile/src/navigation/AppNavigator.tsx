@@ -2,10 +2,13 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { InvitationsScreen } from '../screens/InvitationsScreen';
 import { LoginScreen } from '../screens/LoginScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ReceiptReviewScreen } from '../screens/ReceiptReviewScreen';
 import { TransactionListScreen } from '../screens/TransactionListScreen';
 import { WeeklyAnalysisScreen } from '../screens/WeeklyAnalysisScreen';
+import { WorkspaceScreen } from '../screens/WorkspaceScreen';
 import { storage } from '../services/storage';
 import { useAuthStore } from '../stores/auth';
 import { Colors } from '../theme/colors';
@@ -61,6 +64,9 @@ export function AppNavigator() {
         <Stack.Screen name="ReceiptReview" component={ReceiptReviewScreen} />
         <Stack.Screen name="WeeklyAnalysis" component={WeeklyAnalysisScreen} />
         <Stack.Screen name="TransactionList" component={TransactionListScreen} />
+        <Stack.Screen name="Invitations" component={InvitationsScreen} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
+        <Stack.Screen name="Workspace" component={WorkspaceScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

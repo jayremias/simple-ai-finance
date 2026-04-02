@@ -26,6 +26,7 @@ export const teamMember = pgTable(
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
+    role: text('role').notNull().default('viewer'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [

@@ -20,7 +20,7 @@ function getClientKey(c: { req: { header: (name: string) => string | undefined }
 export function createLimiter(options: RateLimiterOptions = {}) {
   if (isTest) return noopMiddleware;
 
-  const { windowMs = 15 * 60 * 1000, limit = 100 } = options;
+  const { windowMs = 60 * 1000, limit = 200 } = options;
 
   return rateLimiter({
     windowMs,
@@ -31,6 +31,6 @@ export function createLimiter(options: RateLimiterOptions = {}) {
 
 export const globalLimiter = createLimiter();
 
-export const authLimiter = createLimiter({ limit: 10 });
+export const authLimiter = createLimiter({ limit: 60 });
 
-export const sensitiveAuthLimiter = createLimiter({ limit: 5 });
+export const sensitiveAuthLimiter = createLimiter({ windowMs: 15 * 60 * 1000, limit: 5 });

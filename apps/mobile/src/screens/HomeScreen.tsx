@@ -29,6 +29,7 @@ import { FeedAISection } from '../components/home/FeedAISection';
 import { HomeHeader } from '../components/home/HomeHeader';
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
+import { useUnreadNotificationCount } from '../hooks/useNotifications';
 import { useCreateTag, useTags } from '../hooks/useTags';
 import { useCreateTransaction, useTransactions } from '../hooks/useTransactions';
 import { useUserProfile } from '../hooks/useUserProfile';
@@ -334,6 +335,7 @@ export function HomeScreen() {
   const { data: profile, refetch: refetchProfile } = useUserProfile();
   const { data: accountsData, refetch: refetchAccounts } = useAccounts();
   const { data: transactionsData, refetch: refetchTransactions } = useTransactions({ limit: 10 });
+  const { data: unreadCount } = useUnreadNotificationCount();
   const [formVisible, setFormVisible] = useState(false);
   const [editTransaction, setEditTransaction] = useState<TransactionResponse | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -383,7 +385,8 @@ export function HomeScreen() {
       >
         <HomeHeader
           userName={firstName}
-          onNotification={() => Alert.alert('Notifications', 'No new notifications')}
+          badgeCount={unreadCount ?? 0}
+          onNotification={() => navigation.navigate('Notifications')}
         />
 
         <BalanceCard balance={totalBalance} />

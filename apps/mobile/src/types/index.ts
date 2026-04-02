@@ -17,6 +17,9 @@ export type RootStackParamList = {
         type?: 'income' | 'expense' | 'transfer';
       }
     | undefined;
+  Invitations: undefined;
+  Notifications: undefined;
+  Workspace: undefined;
 };
 
 export type MainTabParamList = {
