@@ -9,20 +9,15 @@ import { api } from '@/services/api';
 export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
-    queryFn: async () => {
-      const res = await api.get<CategoryTreeResponse[]>('/categories');
-      return res.data;
-    },
+    queryFn: () => api.get('categories').json<CategoryTreeResponse[]>(),
   });
 }
 
 export function useCreateCategory() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: CreateCategoryInput) => {
-      const res = await api.post<CategoryTreeResponse>('/categories', data);
-      return res.data;
-    },
+    mutationFn: (data: CreateCategoryInput) =>
+      api.post('categories', { json: data }).json<CategoryTreeResponse>(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
@@ -32,10 +27,8 @@ export function useCreateCategory() {
 export function useUpdateCategory() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateCategoryInput }) => {
-      const res = await api.patch<CategoryTreeResponse>(`/categories/${id}`, data);
-      return res.data;
-    },
+    mutationFn: ({ id, data }: { id: string; data: UpdateCategoryInput }) =>
+      api.patch(`categories/${id}`, { json: data }).json<CategoryTreeResponse>(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
@@ -45,9 +38,7 @@ export function useUpdateCategory() {
 export function useDeleteCategory() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/categories/${id}`);
-    },
+    mutationFn: (id: string) => api.delete(`categories/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
     },

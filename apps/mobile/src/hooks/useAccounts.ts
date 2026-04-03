@@ -5,20 +5,15 @@ import { api } from '@/services/api';
 export function useAccounts() {
   return useQuery({
     queryKey: ['accounts'],
-    queryFn: async () => {
-      const res = await api.get<AccountResponse[]>('/accounts');
-      return res.data;
-    },
+    queryFn: () => api.get('accounts').json<AccountResponse[]>(),
   });
 }
 
 export function useCreateAccount() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: CreateAccountInput) => {
-      const res = await api.post<AccountResponse>('/accounts', data);
-      return res.data;
-    },
+    mutationFn: (data: CreateAccountInput) =>
+      api.post('accounts', { json: data }).json<AccountResponse>(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
     },
@@ -28,10 +23,8 @@ export function useCreateAccount() {
 export function useUpdateAccount() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateAccountInput }) => {
-      const res = await api.patch<AccountResponse>(`/accounts/${id}`, data);
-      return res.data;
-    },
+    mutationFn: ({ id, data }: { id: string; data: UpdateAccountInput }) =>
+      api.patch(`accounts/${id}`, { json: data }).json<AccountResponse>(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
     },
@@ -41,9 +34,7 @@ export function useUpdateAccount() {
 export function useDeleteAccount() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/accounts/${id}`);
-    },
+    mutationFn: (id: string) => api.delete(`accounts/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
     },

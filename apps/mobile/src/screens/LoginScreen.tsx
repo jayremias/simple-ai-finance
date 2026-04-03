@@ -76,17 +76,11 @@ export function LoginScreen() {
         const locale = (SUPPORTED_LOCALES as readonly string[]).includes(deviceLocale)
           ? (deviceLocale as (typeof SUPPORTED_LOCALES)[number])
           : 'en-US';
-        api.patch('/users/me', { defaultCurrency: currency, locale }).catch(() => null);
+        api.patch('users/me', { json: { defaultCurrency: currency, locale } }).catch(() => null);
       }
       setAuth(result.token, result.user);
     } catch (err) {
-      const axiosErr = err as { response?: { status?: number; data?: unknown } };
-      console.error(
-        '[auth] status:',
-        axiosErr?.response?.status,
-        'body:',
-        JSON.stringify(axiosErr?.response?.data)
-      );
+      console.error('[auth] error:', err);
       setError(
         mode === 'signin'
           ? 'Invalid email or password.'

@@ -16,15 +16,23 @@ interface ListTransactionsParams {
   limit?: number;
 }
 
+function toSearchParams(params: Record<string, unknown>): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null) result[key] = String(value);
+  }
+  return result;
+}
+
 export function useInfiniteTransactions(params: Omit<ListTransactionsParams, 'cursor'> = {}) {
   return useInfiniteQuery({
     queryKey: ['transactions', 'infinite', params],
-    queryFn: async ({ pageParam }: { pageParam: string | undefined }) => {
-      const res = await api.get<TransactionListResponse>('/transactions', {
-        params: { ...params, cursor: pageParam, limit: 20 },
-      });
-      return res.data;
-    },
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      api
+        .get('transactions', {
+          searchParams: toSearchParams({ ...params, limit: 20, cursor: pageParam }),
+        })
+        .json<TransactionListResponse>(),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
@@ -33,20 +41,18 @@ export function useInfiniteTransactions(params: Omit<ListTransactionsParams, 'cu
 export function useTransactions(params: ListTransactionsParams = {}) {
   return useQuery({
     queryKey: ['transactions', params],
-    queryFn: async () => {
-      const res = await api.get<TransactionListResponse>('/transactions', { params });
-      return res.data;
-    },
+    queryFn: () =>
+      api
+        .get('transactions', { searchParams: toSearchParams(params) })
+        .json<TransactionListResponse>(),
   });
 }
 
 export function useCreateTransaction() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: CreateTransactionInput) => {
-      const res = await api.post<TransactionResponse>('/transactions', data);
-      return res.data;
-    },
+    mutationFn: (data: CreateTransactionInput) =>
+      api.post('transactions', { json: data }).json<TransactionResponse>(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
@@ -56,10 +62,8 @@ export function useCreateTransaction() {
 export function useUpdateTransaction() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateTransactionInput }) => {
-      const res = await api.patch<TransactionResponse>(`/transactions/${id}`, data);
-      return res.data;
-    },
+    mutationFn: ({ id, data }: { id: string; data: UpdateTransactionInput }) =>
+      api.patch(`transactions/${id}`, { json: data }).json<TransactionResponse>(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
@@ -69,9 +73,7 @@ export function useUpdateTransaction() {
 export function useDeleteTransaction() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/transactions/${id}`);
-    },
+    mutationFn: (id: string) => api.delete(`transactions/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
@@ -81,12 +83,11 @@ export function useDeleteTransaction() {
 export function usePayees(query: string) {
   return useQuery({
     queryKey: ['transaction-payees', query],
-    queryFn: async () => {
-      const res = await api.get<{ data: string[] }>('/transactions/payees', {
-        params: query ? { q: query } : {},
-      });
-      return res.data.data;
-    },
+    queryFn: () =>
+      api
+        .get('transactions/payees', { searchParams: query ? { q: query } : {} })
+        .json<{ data: string[] }>()
+        .then((res) => res.data),
     enabled: query.length > 0,
   });
 }
