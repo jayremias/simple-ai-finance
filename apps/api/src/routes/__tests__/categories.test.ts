@@ -76,8 +76,8 @@ describe('GET /api/v1/categories', () => {
     });
 
     const body = (await res.json()) as CategoryTreeResponse[];
-    const names = body.map((c) => c.name);
-    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
+    const names = body.map((category) => category.name);
+    expect(names).toEqual([...names].sort((nameA, nameB) => nameA.localeCompare(nameB)));
   });
 
   test('subcategories are returned in alphabetical order', async () => {
@@ -87,11 +87,11 @@ describe('GET /api/v1/categories', () => {
     });
 
     const body = (await res.json()) as CategoryTreeResponse[];
-    const food = body.find((c) => c.translationKey === 'food_dining');
+    const food = body.find((category) => category.translationKey === 'food_dining');
     if (!food) throw new Error('food_dining category not found');
 
-    const childNames = food.children.map((c) => c.name);
-    expect(childNames).toEqual([...childNames].sort((a, b) => a.localeCompare(b)));
+    const childNames = food.children.map((category) => category.name);
+    expect(childNames).toEqual([...childNames].sort((nameA, nameB) => nameA.localeCompare(nameB)));
   });
 
   test('custom categories are included in the tree', async () => {
