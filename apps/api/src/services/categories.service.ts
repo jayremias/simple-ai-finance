@@ -1,6 +1,6 @@
 import type { CreateCategoryInput, UpdateCategoryInput } from '@moneylens/shared';
 import { DEFAULT_CATEGORIES } from '@moneylens/shared';
-import { and, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { category } from '@/lib/db/schema/category';
 import { DatabaseError, InvalidInputError } from '@/lib/errors';
@@ -14,7 +14,7 @@ export async function listCategories(organizationId: string) {
     .select()
     .from(category)
     .where(eq(category.organizationId, organizationId))
-    .orderBy(category.sortOrder);
+    .orderBy(asc(category.name));
 
   // Build tree in memory — parents first, children nested
   const parents = rows.filter((r) => r.parentId === null);
