@@ -1,7 +1,11 @@
 import { createCategorySchema, updateCategorySchema } from '@moneylens/shared';
 import { Hono } from 'hono';
-import type { AuthVariables } from '@/middleware/auth';
 import { requireAuth } from '@/middleware/auth';
+import {
+  type OrgMembershipVariables,
+  requireActiveOrg,
+  requireOrgMembership,
+} from '@/middleware/organization';
 import {
   createCategory,
   deleteCategory,
@@ -9,31 +13,22 @@ import {
   updateCategory,
 } from '@/services/categories.service';
 
-const categories = new Hono<{ Variables: AuthVariables }>()
+const categories = new Hono<{ Variables: OrgMembershipVariables }>()
   .basePath('/categories')
-  .use(requireAuth);
+  .use(requireAuth)
+  .use(requireActiveOrg)
+  .use(requireOrgMembership());
 
 // GET /categories
 categories.get('/', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
-
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
-
+  const organizationId = c.get('organizationId');
   const tree = await listCategories(organizationId);
   return c.json(tree);
 });
 
 // POST /categories
 categories.post('/', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
-
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
+  const organizationId = c.get('organizationId');
 
   const body = await c.req.json();
   const parsed = createCategorySchema.safeParse(body);
@@ -63,13 +58,8 @@ categories.post('/', async (c) => {
 
 // PATCH /categories/:id
 categories.patch('/:id', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
+  const organizationId = c.get('organizationId');
   const id = c.req.param('id');
-
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
 
   const body = await c.req.json();
   const parsed = updateCategorySchema.safeParse(body);
@@ -100,13 +90,8 @@ categories.patch('/:id', async (c) => {
 
 // DELETE /categories/:id
 categories.delete('/:id', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
+  const organizationId = c.get('organizationId');
   const id = c.req.param('id');
-
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
 
   const deleted = await deleteCategory(id, organizationId);
   if (!deleted) {

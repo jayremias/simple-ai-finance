@@ -2,6 +2,7 @@ import type { CreateTagInput } from '@moneylens/shared';
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { tag } from '@/lib/db/schema/tag';
+import { ConflictError } from '@/lib/errors';
 
 export async function listTags(organizationId: string) {
   return db.select().from(tag).where(eq(tag.organizationId, organizationId)).orderBy(tag.name);
@@ -16,9 +17,7 @@ export async function createTag(organizationId: string, data: CreateTagInput) {
     .limit(1);
 
   if (existing) {
-    throw Object.assign(new Error('Tag already exists in this organization'), {
-      code: 'DUPLICATE_TAG',
-    });
+    throw new ConflictError('DUPLICATE_TAG', 'Tag already exists in this organization');
   }
 
   const [created] = await db.insert(tag).values({ organizationId, name: data.name }).returning();

@@ -1,18 +1,22 @@
 import { createTagSchema } from '@moneylens/shared';
 import { Hono } from 'hono';
-import type { AuthVariables } from '@/middleware/auth';
 import { requireAuth } from '@/middleware/auth';
+import {
+  type OrgMembershipVariables,
+  requireActiveOrg,
+  requireOrgMembership,
+} from '@/middleware/organization';
 import { createTag, deleteTag, listTags } from '@/services/tags.service';
 
-const tags = new Hono<{ Variables: AuthVariables }>().basePath('/tags').use(requireAuth);
+const tags = new Hono<{ Variables: OrgMembershipVariables }>()
+  .basePath('/tags')
+  .use(requireAuth)
+  .use(requireActiveOrg)
+  .use(requireOrgMembership());
 
 // GET /tags
 tags.get('/', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
+  const organizationId = c.get('organizationId');
   const list = await listTags(organizationId);
   return c.json(
     list.map((t) => ({
@@ -25,11 +29,7 @@ tags.get('/', async (c) => {
 
 // POST /tags
 tags.post('/', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
+  const organizationId = c.get('organizationId');
 
   const body = await c.req.json();
   const parsed = createTagSchema.safeParse(body);
@@ -46,32 +46,21 @@ tags.post('/', async (c) => {
     );
   }
 
-  try {
-    const created = await createTag(organizationId, parsed.data);
-    return c.json(
-      {
-        ...created,
-        createdAt: created.createdAt.toISOString(),
-        updatedAt: created.updatedAt.toISOString(),
-      },
-      201
-    );
-  } catch (err) {
-    if (err instanceof Error && (err as { code?: string }).code === 'DUPLICATE_TAG') {
-      return c.json({ error: { code: 'DUPLICATE_TAG', message: err.message } }, 409);
-    }
-    throw err;
-  }
+  const created = await createTag(organizationId, parsed.data);
+  return c.json(
+    {
+      ...created,
+      createdAt: created.createdAt.toISOString(),
+      updatedAt: created.updatedAt.toISOString(),
+    },
+    201
+  );
 });
 
 // DELETE /tags/:id
 tags.delete('/:id', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
+  const organizationId = c.get('organizationId');
   const id = c.req.param('id');
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
 
   const deleted = await deleteTag(id, organizationId);
   if (!deleted) {

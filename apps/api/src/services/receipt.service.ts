@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { ParseTransactionsResponse } from '@moneylens/shared';
 import { extractText } from '@/lib/ai/ocr';
 import { parseTransactionsFromText } from '@/lib/ai/parse';
+import { InvalidInputError } from '@/lib/errors';
 import { getObject, getPresignedUploadUrl } from '@/lib/s3';
 
 const SUPPORTED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
@@ -30,9 +31,7 @@ export async function extractFromKey(
   const mimeType = extension && mimeTypeMap[extension] ? mimeTypeMap[extension] : 'image/jpeg';
 
   if (!SUPPORTED_MIME_TYPES.includes(mimeType)) {
-    throw Object.assign(new Error(`Unsupported file type: ${mimeType}`), {
-      code: 'UNSUPPORTED_FILE_TYPE',
-    });
+    throw new InvalidInputError('UNSUPPORTED_FILE_TYPE', `Unsupported file type: ${mimeType}`);
   }
 
   const { text } = await extractText(buffer, mimeType);

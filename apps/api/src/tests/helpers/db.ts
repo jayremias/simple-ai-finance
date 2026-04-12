@@ -15,6 +15,7 @@ export async function truncateAll(): Promise<void> {
       "tag",
       "user_profile",
       "category",
+      "notification",
       "session",
       "account",
       "verification",
