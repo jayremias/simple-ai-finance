@@ -61,10 +61,14 @@ export function requireOrgMembership(minimumRole: 'owner' | 'editor' | 'member' 
     const user = c.get('user');
     const organizationId = c.get('organizationId');
 
+    if (!user) {
+      return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
+    }
+
     const [orgMember] = await db
       .select()
       .from(member)
-      .where(and(eq(member.organizationId, organizationId), eq(member.userId, user!.id)))
+      .where(and(eq(member.organizationId, organizationId), eq(member.userId, user.id)))
       .limit(1);
 
     if (!orgMember) {

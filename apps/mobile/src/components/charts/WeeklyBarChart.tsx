@@ -20,7 +20,7 @@ export function WeeklyBarChart({ data, onBarPress }: WeeklyBarChartProps) {
       {data.map((item, index) =>
         item.isActive ? (
           <View
-            key={`tooltip-${index}`}
+            key={`tooltip-${item.day}`}
             style={[
               styles.tooltip,
               {
@@ -38,7 +38,7 @@ export function WeeklyBarChart({ data, onBarPress }: WeeklyBarChartProps) {
           const barHeight = (item.amount / maxAmount) * CHART_HEIGHT;
           return (
             <TouchableOpacity
-              key={index}
+              key={item.day}
               style={styles.barWrapper}
               onPress={() => onBarPress?.(item, index)}
               activeOpacity={0.8}

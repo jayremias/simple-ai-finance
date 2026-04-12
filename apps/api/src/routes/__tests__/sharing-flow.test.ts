@@ -12,14 +12,11 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { app } from '@/index';
 import {
-  addUserToOrg,
   addUserToTeam,
   bearerHeader,
   createAuthenticatedUserWithOrg,
-  removeUserFromOrg,
   removeUserFromTeam,
   setActiveOrg,
-  updateOrgRole,
 } from '@/tests/helpers/auth';
 import { truncateAll } from '@/tests/helpers/db';
 
@@ -298,8 +295,8 @@ describe('Phase 4: User2 checks notifications and accepts invite', () => {
 
     const invitation = body.data.find((notification) => notification.type === 'account_invitation');
     expect(invitation).toBeDefined();
-    expect(invitation!.status).toBe('pending');
-    invitationNotificationId = invitation!.id;
+    expect(invitation?.status).toBe('pending');
+    invitationNotificationId = invitation?.id ?? '';
   });
 
   test('user2 accepts the invitation', async () => {
@@ -404,7 +401,7 @@ describe('Phase 7: Invite user2 to Account-B as editor', () => {
     );
     expect(invitation).toBeDefined();
 
-    const acceptResponse = await app.request(`/api/v1/notifications/${invitation!.id}/accept`, {
+    const acceptResponse = await app.request(`/api/v1/notifications/${invitation?.id}/accept`, {
       method: 'POST',
       headers: bearerHeader(user2Token),
     });
@@ -675,14 +672,14 @@ describe('Phase 15: Transfer integrity', () => {
       (transaction) => transaction.type === 'transfer' && transaction.amount < 0
     );
     expect(outgoing).toBeDefined();
-    expect(outgoing!.amount).toBe(-10000);
+    expect(outgoing?.amount).toBe(-10000);
 
     // Find the incoming transfer to A (B->A, 5000 cents)
     const incoming = bodyA.data.find(
       (transaction) => transaction.type === 'transfer' && transaction.amount > 0
     );
     expect(incoming).toBeDefined();
-    expect(incoming!.amount).toBe(5000);
+    expect(incoming?.amount).toBe(5000);
   });
 });
 

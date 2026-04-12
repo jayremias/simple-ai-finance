@@ -22,7 +22,10 @@ const accounts = new Hono<{ Variables: AccountPermissionVariables }>()
 
 // POST /accounts — Create account in user's active org
 accounts.post('/', requireActiveOrg, requireOrgMembership('editor'), async (c) => {
-  const user = c.get('user')!;
+  const user = c.get('user');
+  if (!user) {
+    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
+  }
   const organizationId = c.get('organizationId') as string;
 
   const body = await c.req.json();
