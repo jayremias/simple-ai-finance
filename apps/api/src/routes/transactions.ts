@@ -5,8 +5,12 @@ import {
 } from '@moneylens/shared';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import type { AuthVariables } from '@/middleware/auth';
 import { requireAuth } from '@/middleware/auth';
+import {
+  type OrgMembershipVariables,
+  requireActiveOrg,
+  requireOrgMembership,
+} from '@/middleware/organization';
 import {
   createTransaction,
   deleteTransaction,
@@ -20,17 +24,15 @@ const payeeQuerySchema = z.object({
   q: z.string().trim().min(1).max(200).optional(),
 });
 
-const transactions = new Hono<{ Variables: AuthVariables }>()
+const transactions = new Hono<{ Variables: OrgMembershipVariables }>()
   .basePath('/transactions')
-  .use(requireAuth);
+  .use(requireAuth)
+  .use(requireActiveOrg)
+  .use(requireOrgMembership());
 
 // GET /transactions
 transactions.get('/', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
+  const organizationId = c.get('organizationId');
 
   const parsed = listTransactionsSchema.safeParse(c.req.query());
   if (!parsed.success) {
@@ -52,11 +54,7 @@ transactions.get('/', async (c) => {
 
 // GET /transactions/payees
 transactions.get('/payees', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
+  const organizationId = c.get('organizationId');
 
   const parsed = payeeQuerySchema.safeParse(c.req.query());
   if (!parsed.success) {
@@ -78,11 +76,7 @@ transactions.get('/payees', async (c) => {
 
 // GET /transactions/:id
 transactions.get('/:id', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
+  const organizationId = c.get('organizationId');
 
   const tx = await getTransactionById(c.req.param('id'), organizationId);
   if (!tx) {
@@ -93,11 +87,7 @@ transactions.get('/:id', async (c) => {
 
 // POST /transactions
 transactions.post('/', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
+  const organizationId = c.get('organizationId');
 
   const body = await c.req.json();
   const parsed = createTransactionSchema.safeParse(body);
@@ -120,11 +110,7 @@ transactions.post('/', async (c) => {
 
 // PATCH /transactions/:id
 transactions.patch('/:id', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
+  const organizationId = c.get('organizationId');
 
   const body = await c.req.json();
   const parsed = updateTransactionSchema.safeParse(body);
@@ -150,11 +136,7 @@ transactions.patch('/:id', async (c) => {
 
 // DELETE /transactions/:id
 transactions.delete('/:id', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
+  const organizationId = c.get('organizationId');
 
   const deleted = await deleteTransaction(c.req.param('id'), organizationId);
   if (!deleted) {

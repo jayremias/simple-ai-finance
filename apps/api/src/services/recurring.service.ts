@@ -11,6 +11,7 @@ import { db } from '@/lib/db';
 import { recurringRule } from '@/lib/db/schema/recurring';
 import { team } from '@/lib/db/schema/team';
 import { transaction } from '@/lib/db/schema/transaction';
+import { NotFoundError } from '@/lib/errors';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -172,7 +173,7 @@ export async function createRecurringRule(
     .limit(1);
 
   if (!acct) {
-    throw Object.assign(new Error('Account not found'), { code: 'NOT_FOUND' });
+    throw new NotFoundError('Account not found');
   }
 
   const [rule] = await db

@@ -2,6 +2,7 @@ import { importStatementSchema } from '@moneylens/shared';
 import { Hono } from 'hono';
 import type { AuthVariables } from '@/middleware/auth';
 import { requireAuth } from '@/middleware/auth';
+import { requireActiveOrg, requireOrgMembership } from '@/middleware/organization';
 import { getStatementUploadUrl, importStatement } from '@/services/statement.service';
 
 const statements = new Hono<{ Variables: AuthVariables }>()
@@ -15,12 +16,8 @@ statements.post('/upload-url', async (c) => {
 });
 
 // POST /statements/import
-statements.post('/import', async (c) => {
-  const session = c.get('session');
-  const organizationId = session?.activeOrganizationId;
-  if (!organizationId) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: 'No active organization.' } }, 400);
-  }
+statements.post('/import', requireActiveOrg, requireOrgMembership(), async (c) => {
+  const organizationId = c.get('organizationId') as string;
 
   const body = await c.req.json();
   const parsed = importStatementSchema.safeParse(body);

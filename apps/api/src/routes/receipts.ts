@@ -29,18 +29,8 @@ receipts.post('/extract', async (c) => {
     );
   }
 
-  try {
-    const result = await extractFromKey(parsed.data.key);
-    return c.json(result);
-  } catch (err) {
-    if (err instanceof Error) {
-      const code = (err as { code?: string }).code;
-      if (code === 'UNSUPPORTED_FILE_TYPE') {
-        return c.json({ error: { code: 'UNSUPPORTED_FILE_TYPE', message: err.message } }, 400);
-      }
-    }
-    throw err;
-  }
+  const result = await extractFromKey(parsed.data.key);
+  return c.json(result);
 });
 
 export default receipts;

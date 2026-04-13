@@ -1,7 +1,8 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { session, user } from '@/lib/db/schema';
 import { member, organization } from '@/lib/db/schema/organization';
+import { teamMember } from '@/lib/db/schema/team';
 import { seedDefaultCategories } from '@/services/categories.service';
 
 type CreateTestUserOptions = {
@@ -130,4 +131,67 @@ export async function createAuthenticatedUserWithOrg(options: CreateTestUserOpti
  */
 export function bearerHeader(token: string): Record<string, string> {
   return { Authorization: `Bearer ${token}` };
+}
+
+/**
+ * Adds a user to a team (account-level sharing).
+ * This simulates accepting an invitation to a specific account.
+ */
+export async function addUserToTeam(userId: string, teamId: string): Promise<void> {
+  await db.insert(teamMember).values({
+    id: crypto.randomUUID(),
+    teamId,
+    userId,
+    createdAt: new Date(),
+  });
+}
+
+/**
+ * Removes a user from a team (revokes account-level access).
+ */
+export async function removeUserFromTeam(userId: string, teamId: string): Promise<void> {
+  await db
+    .delete(teamMember)
+    .where(and(eq(teamMember.teamId, teamId), eq(teamMember.userId, userId)));
+}
+
+/**
+ * Adds a user to an organization with the specified role.
+ * This simulates accepting an invitation to a workspace.
+ */
+export async function addUserToOrg(
+  userId: string,
+  organizationId: string,
+  role: 'owner' | 'editor' | 'member' | 'viewer' = 'member'
+): Promise<void> {
+  await db.insert(member).values({
+    id: crypto.randomUUID(),
+    organizationId,
+    userId,
+    role,
+    createdAt: new Date(),
+  });
+}
+
+/**
+ * Removes a user from an organization (revokes workspace-level access).
+ */
+export async function removeUserFromOrg(userId: string, organizationId: string): Promise<void> {
+  await db
+    .delete(member)
+    .where(and(eq(member.organizationId, organizationId), eq(member.userId, userId)));
+}
+
+/**
+ * Updates a user's role in an organization.
+ */
+export async function updateOrgRole(
+  userId: string,
+  organizationId: string,
+  role: 'owner' | 'editor' | 'member' | 'viewer'
+): Promise<void> {
+  await db
+    .update(member)
+    .set({ role })
+    .where(and(eq(member.organizationId, organizationId), eq(member.userId, userId)));
 }
