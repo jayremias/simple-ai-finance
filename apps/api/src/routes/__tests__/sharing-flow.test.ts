@@ -282,8 +282,8 @@ describe('Phase 3: Invite user2 to Account-A as viewer', () => {
 // (WILL FAIL — notification routes don't exist yet)
 // ==========================================================================
 
-describe.skip('Phase 4: User2 checks notifications and accepts invite', () => {
-  let invitationNotificationId: string;
+describe('Phase 4: User2 checks notifications and accepts invite', () => {
+  let invitationId: string;
 
   test('user2 sees pending invitation in notifications', async () => {
     const response = await app.request('/api/v1/notifications', {
@@ -293,14 +293,17 @@ describe.skip('Phase 4: User2 checks notifications and accepts invite', () => {
     const body = (await response.json()) as { data: NotificationResponse[] };
     expect(body.data.length).toBeGreaterThanOrEqual(1);
 
-    const invitation = body.data.find((notification) => notification.type === 'account_invitation');
-    expect(invitation).toBeDefined();
-    expect(invitation?.status).toBe('pending');
-    invitationNotificationId = invitation?.id ?? '';
+    const invitationNotification = body.data.find(
+      (notification) => notification.type === 'account_invitation'
+    );
+    expect(invitationNotification).toBeDefined();
+    expect(invitationNotification?.status).toBe('unread');
+    invitationId = (invitationNotification?.data as Record<string, string>)?.invitationId ?? '';
+    expect(invitationId).not.toBe('');
   });
 
   test('user2 accepts the invitation', async () => {
-    const response = await app.request(`/api/v1/notifications/${invitationNotificationId}/accept`, {
+    const response = await app.request(`/api/v1/sharing/invitations/${invitationId}/accept`, {
       method: 'POST',
       headers: bearerHeader(user2Token),
     });
@@ -313,11 +316,6 @@ describe.skip('Phase 4: User2 checks notifications and accepts invite', () => {
 // ==========================================================================
 
 describe('Phase 5: User2 viewer access to Account-A', () => {
-  // Simulate invitation acceptance via direct DB (until sharing routes exist)
-  beforeAll(async () => {
-    await addUserToTeam(user2Id, accountA.teamId);
-  });
-
   test('user2 can read Account-A', async () => {
     const response = await app.request(`/api/v1/accounts/${accountA.id}`, {
       headers: bearerHeader(user2Token),
