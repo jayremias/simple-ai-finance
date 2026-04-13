@@ -262,7 +262,7 @@ describe('Phase 2: Populate accounts', () => {
 // (WILL FAIL — sharing routes don't exist yet)
 // ==========================================================================
 
-describe.skip('Phase 3: Invite user2 to Account-A as viewer', () => {
+describe('Phase 3: Invite user2 to Account-A as viewer', () => {
   test('user1 invites user2 to Account-A with viewer role', async () => {
     const response = await app.request('/api/v1/sharing/invite', {
       method: 'POST',

@@ -12,6 +12,7 @@ import categories from '@/routes/categories';
 import health from '@/routes/health';
 import receipts from '@/routes/receipts';
 import recurring from '@/routes/recurring';
+import sharing from '@/routes/sharing';
 import statements from '@/routes/statements';
 import tags from '@/routes/tags';
 import transactions from '@/routes/transactions';
@@ -53,6 +54,7 @@ api.route('/', tags);
 api.route('/', transactions);
 api.route('/', recurring);
 api.route('/', receipts);
+api.route('/', sharing);
 api.route('/', statements);
 
 app.route('/', api);
