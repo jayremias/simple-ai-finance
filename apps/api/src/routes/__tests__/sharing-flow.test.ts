@@ -116,6 +116,8 @@ let user2Id: string;
 let accountA: AccountResponse;
 let accountB: AccountResponse;
 let user2TransactionId: string;
+let user1AccountBTransactionId: string;
+let firstInvitationId: string;
 
 // ---------------------------------------------------------------------------
 // Test suite
@@ -210,6 +212,8 @@ describe('Phase 2: Populate accounts', () => {
     });
     expect(response1.status).toBe(201);
     expect(response2.status).toBe(201);
+    const body = (await response1.json()) as TransactionResponse;
+    user1AccountBTransactionId = body.id;
   });
 
   test('user1 adds 2 incomes to Account-B', async () => {
@@ -289,6 +293,7 @@ describe('Phase 4: User2 checks notifications and accepts invite', () => {
     expect(invitationNotification?.status).toBe('unread');
     invitationId = (invitationNotification?.data as Record<string, string>)?.invitationId ?? '';
     expect(invitationId).not.toBe('');
+    firstInvitationId = invitationId;
   });
 
   test('user2 accepts the invitation', async () => {
@@ -471,6 +476,13 @@ describe('Phase 9a: Shared user reads transactions', () => {
     const response = await listTransactions(user2Token, accountA.teamId);
     expect(response.status).toBe(200);
   });
+
+  test('user2 can read single transaction by ID on Account-B (editor)', async () => {
+    const response = await app.request(`/api/v1/transactions/${user1AccountBTransactionId}`, {
+      headers: bearerHeader(user2Token),
+    });
+    expect(response.status).toBe(200);
+  });
 });
 
 // ==========================================================================
@@ -496,6 +508,15 @@ describe('Phase 9b: Shared user manages transactions', () => {
       method: 'PATCH',
       headers: authJson(user2Token),
       body: JSON.stringify({ payee: 'Updated payee' }),
+    });
+    expect(response.status).toBe(200);
+  });
+
+  test('user2 can update user1 transaction on Account-B (editor)', async () => {
+    const response = await app.request(`/api/v1/transactions/${user1AccountBTransactionId}`, {
+      method: 'PATCH',
+      headers: authJson(user2Token),
+      body: JSON.stringify({ notes: 'Updated by user2' }),
     });
     expect(response.status).toBe(200);
   });
@@ -791,5 +812,72 @@ describe('Phase 16: Edge cases', () => {
     });
     expect(response.status).toBe(403);
     await setActiveOrg(user2Token, user2OrgId);
+  });
+
+  test('double-accept of invitation returns 404', async () => {
+    // firstInvitationId was already accepted in Phase 4
+    const response = await app.request(`/api/v1/sharing/invitations/${firstInvitationId}/accept`, {
+      method: 'POST',
+      headers: bearerHeader(user2Token),
+    });
+    expect(response.status).toBe(404);
+  });
+
+  test('accepting invitation meant for another email returns 404', async () => {
+    // Invite user3@test.com, then user2 tries to accept it
+    const inviteResponse = await app.request('/api/v1/sharing/invite', {
+      method: 'POST',
+      headers: authJson(user1Token),
+      body: JSON.stringify({
+        accountId: accountA.id,
+        email: 'user3@test.com',
+        role: 'viewer',
+      }),
+    });
+    expect(inviteResponse.status).toBe(201);
+    const invitation = (await inviteResponse.json()) as { id: string };
+
+    const response = await app.request(`/api/v1/sharing/invitations/${invitation.id}/accept`, {
+      method: 'POST',
+      headers: bearerHeader(user2Token),
+    });
+    expect(response.status).toBe(404);
+  });
+
+  test('notification marked as read after acceptance', async () => {
+    // The Phase 4 acceptance should have marked the notification as read
+    const response = await app.request('/api/v1/notifications', {
+      headers: bearerHeader(user2Token),
+    });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { data: NotificationResponse[] };
+    const readNotifications = body.data.filter(
+      (notification) => notification.type === 'account_invitation' && notification.status === 'read'
+    );
+    expect(readNotifications.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('transfer to inaccessible account fails', async () => {
+    // user2 (editor on Account-B) tries to transfer to a new account they have no access to
+    // First, user1 creates Account-C
+    const accountCResponse = await app.request('/api/v1/accounts', {
+      method: 'POST',
+      headers: authJson(user1Token),
+      body: JSON.stringify({
+        name: 'Account C',
+        type: 'checking',
+        currency: 'USD',
+        initialBalance: 0,
+      }),
+    });
+    expect(accountCResponse.status).toBe(201);
+    const accountC = (await accountCResponse.json()) as { teamId: string };
+
+    // user2 tries to transfer from Account-B to Account-C (no access)
+    const response = await createTransaction(user2Token, accountB.teamId, 'transfer', 1000, {
+      payee: 'Unauthorized transfer',
+      toTeamId: accountC.teamId,
+    });
+    expect(response.status).toBe(403);
   });
 });

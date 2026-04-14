@@ -9,7 +9,8 @@ import { db } from '@/lib/db';
 import { tag } from '@/lib/db/schema/tag';
 import { team } from '@/lib/db/schema/team';
 import { transaction, transactionTag } from '@/lib/db/schema/transaction';
-import { DatabaseError, InvalidInputError, NotFoundError } from '@/lib/errors';
+import { DatabaseError, ForbiddenError, InvalidInputError, NotFoundError } from '@/lib/errors';
+import { resolveUserAccountAccess } from '@/services/accounts.service';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -172,6 +173,7 @@ export async function getTransactionById(id: string, organizationId: string) {
 
 export async function createTransaction(
   organizationId: string,
+  userId: string,
   input: CreateTransactionInput
 ): Promise<TransactionResponse> {
   const { accountId, toAccountId, type, amount, date, payee, notes, categoryId, tagIds } = input;
@@ -201,6 +203,12 @@ export async function createTransaction(
 
     if (!toAcct) {
       throw new NotFoundError('Destination account not found');
+    }
+
+    // Verify user has access to the destination account
+    const toAccess = await resolveUserAccountAccess(userId, toAccountId);
+    if (!toAccess) {
+      throw new ForbiddenError('No access to destination account');
     }
   }
 

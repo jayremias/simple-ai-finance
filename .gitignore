@@ -44,3 +44,20 @@ yarn-error.*
 
 # Claude Code worktrees
 .claude/worktrees/
+.turbo/cache/0ccc6b96e249b324-manifest.json
+.turbo/cache/0ccc6b96e249b324-meta.json
+.turbo/cache/0ccc6b96e249b324.tar.zst
+.turbo/cache/524e1ff874ddac3e-manifest.json
+.turbo/cache/524e1ff874ddac3e-meta.json
+.turbo/cache/524e1ff874ddac3e.tar.zst
+.turbo/cache/2856749f224c3ecd-manifest.json
+.turbo/cache/2856749f224c3ecd-meta.json
+.turbo/cache/2856749f224c3ecd.tar.zst
+.turbo/cache/a64ec6937ca618c7-manifest.json
+.turbo/cache/a64ec6937ca618c7-meta.json
+.turbo/cache/a64ec6937ca618c7.tar.zst
+.turbo/cache/a692e94ebf282024-manifest.json
+.turbo/cache/a692e94ebf282024-meta.json
+.turbo/cache/a692e94ebf282024.tar.zst
+apps/api/.turbo/turbo-build.log
+apps/api/.turbo/turbo-test.log

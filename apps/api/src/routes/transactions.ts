@@ -119,16 +119,20 @@ transactions.get('/payees', requireActiveOrg, requireOrgMembership(), async (c) 
   return c.json({ data });
 });
 
-// GET /transactions/:id — org-scoped
-transactions.get('/:id', requireActiveOrg, requireOrgMembership(), async (c) => {
-  const organizationId = c.get('organizationId');
+// GET /transactions/:id — account-scoped (shared users can read via team access)
+transactions.get(
+  '/:id',
+  requireAccountAccess('viewer', { from: 'lookup', table: 'transaction' }),
+  async (c) => {
+    const organizationId = c.get('organizationId');
 
-  const tx = await getTransactionById(c.req.param('id'), organizationId);
-  if (!tx) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Transaction not found' } }, 404);
+    const tx = await getTransactionById(c.req.param('id'), organizationId);
+    if (!tx) {
+      return c.json({ error: { code: 'NOT_FOUND', message: 'Transaction not found' } }, 404);
+    }
+    return c.json(tx);
   }
-  return c.json(tx);
-});
+);
 
 // POST /transactions — account-scoped (shared users can create via team access)
 transactions.post(
@@ -152,7 +156,11 @@ transactions.post(
       );
     }
 
-    const tx = await createTransaction(organizationId, parsed.data);
+    const user = c.get('user');
+    if (!user) {
+      return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
+    }
+    const tx = await createTransaction(organizationId, user.id, parsed.data);
     return c.json(tx, 201);
   }
 );

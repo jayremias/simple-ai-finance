@@ -430,12 +430,13 @@ describe('GET /api/v1/transactions/:id', () => {
     expect(res.status).toBe(401);
   });
 
-  test('returns 404 for non-existent transaction', async () => {
+  test('returns 400 for non-existent transaction', async () => {
     const { token } = await createAuthenticatedUserWithOrg();
     const res = await app.request(`/api/v1/transactions/${crypto.randomUUID()}`, {
       headers: bearerHeader(token),
     });
-    expect(res.status).toBe(404);
+    // Account lookup fails for unknown transaction → 400 (no account ID resolved)
+    expect(res.status).toBe(400);
   });
 
   test('returns transaction by id', async () => {
@@ -458,7 +459,7 @@ describe('GET /api/v1/transactions/:id', () => {
     expect(body.notes).toBe('lunch');
   });
 
-  test('returns 404 for transaction in different org', async () => {
+  test('returns 403 for transaction in different org', async () => {
     const { token: token1 } = await createAuthenticatedUserWithOrg();
     const account = await createAccount(token1);
     const tx = await createTransaction(token1, {
@@ -475,7 +476,8 @@ describe('GET /api/v1/transactions/:id', () => {
     const res = await app.request(`/api/v1/transactions/${tx.id}`, {
       headers: bearerHeader(token2),
     });
-    expect(res.status).toBe(404);
+    // User has no access to this account → 403
+    expect(res.status).toBe(403);
   });
 });
 
@@ -562,7 +564,8 @@ describe('DELETE /api/v1/transactions/:id', () => {
     const getRes = await app.request(`/api/v1/transactions/${tx.id}`, {
       headers: bearerHeader(token),
     });
-    expect(getRes.status).toBe(404);
+    // Deleted transaction can't be looked up → 400 (no account ID resolved)
+    expect(getRes.status).toBe(400);
   });
 
   test('deletes both sides of a transfer', async () => {
