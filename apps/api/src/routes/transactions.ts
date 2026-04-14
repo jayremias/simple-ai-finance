@@ -11,6 +11,7 @@ import {
   requireActiveOrg,
   requireOrgMembership,
 } from '@/middleware/organization';
+import { type AccountPermissionVariables, requireAccountAccess } from '@/middleware/permissions';
 import {
   createTransaction,
   deleteTransaction,
@@ -24,14 +25,14 @@ const payeeQuerySchema = z.object({
   q: z.string().trim().min(1).max(200).optional(),
 });
 
-const transactions = new Hono<{ Variables: OrgMembershipVariables }>()
+const transactions = new Hono<{
+  Variables: OrgMembershipVariables & AccountPermissionVariables;
+}>()
   .basePath('/transactions')
-  .use(requireAuth)
-  .use(requireActiveOrg)
-  .use(requireOrgMembership());
+  .use(requireAuth);
 
-// GET /transactions
-transactions.get('/', async (c) => {
+// GET /transactions — org-scoped (list all transactions in org)
+transactions.get('/', requireActiveOrg, requireOrgMembership(), async (c) => {
   const organizationId = c.get('organizationId');
 
   const parsed = listTransactionsSchema.safeParse(c.req.query());
@@ -52,8 +53,8 @@ transactions.get('/', async (c) => {
   return c.json(result);
 });
 
-// GET /transactions/payees
-transactions.get('/payees', async (c) => {
+// GET /transactions/payees — org-scoped
+transactions.get('/payees', requireActiveOrg, requireOrgMembership(), async (c) => {
   const organizationId = c.get('organizationId');
 
   const parsed = payeeQuerySchema.safeParse(c.req.query());
@@ -74,8 +75,8 @@ transactions.get('/payees', async (c) => {
   return c.json({ data });
 });
 
-// GET /transactions/:id
-transactions.get('/:id', async (c) => {
+// GET /transactions/:id — org-scoped
+transactions.get('/:id', requireActiveOrg, requireOrgMembership(), async (c) => {
   const organizationId = c.get('organizationId');
 
   const tx = await getTransactionById(c.req.param('id'), organizationId);
@@ -85,31 +86,35 @@ transactions.get('/:id', async (c) => {
   return c.json(tx);
 });
 
-// POST /transactions
-transactions.post('/', async (c) => {
-  const organizationId = c.get('organizationId');
+// POST /transactions — account-scoped (shared users can create via team access)
+transactions.post(
+  '/',
+  requireAccountAccess('editor', { from: 'body', name: 'accountId' }),
+  async (c) => {
+    const organizationId = c.get('organizationId');
 
-  const body = await c.req.json();
-  const parsed = createTransactionSchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request body',
-          details: parsed.error.flatten(),
+    const body = await c.req.json();
+    const parsed = createTransactionSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json(
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid request body',
+            details: parsed.error.flatten(),
+          },
         },
-      },
-      400
-    );
+        400
+      );
+    }
+
+    const tx = await createTransaction(organizationId, parsed.data);
+    return c.json(tx, 201);
   }
+);
 
-  const tx = await createTransaction(organizationId, parsed.data);
-  return c.json(tx, 201);
-});
-
-// PATCH /transactions/:id
-transactions.patch('/:id', async (c) => {
+// PATCH /transactions/:id — org-scoped
+transactions.patch('/:id', requireActiveOrg, requireOrgMembership(), async (c) => {
   const organizationId = c.get('organizationId');
 
   const body = await c.req.json();
@@ -134,8 +139,8 @@ transactions.patch('/:id', async (c) => {
   return c.json(updated);
 });
 
-// DELETE /transactions/:id
-transactions.delete('/:id', async (c) => {
+// DELETE /transactions/:id — org-scoped
+transactions.delete('/:id', requireActiveOrg, requireOrgMembership(), async (c) => {
   const organizationId = c.get('organizationId');
 
   const deleted = await deleteTransaction(c.req.param('id'), organizationId);

@@ -77,31 +77,19 @@ describe('POST /api/v1/transactions', () => {
     expect(res.status).toBe(401);
   });
 
-  test('returns 400 when session has no active organization', async () => {
+  test('returns 403 when user has no access to account', async () => {
     const { token } = await createAuthenticatedUser();
     const res = await app.request('/api/v1/transactions', {
       method: 'POST',
       headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
       body: JSON.stringify({ accountId: 'x', type: 'expense', amount: 100, date: '2024-01-01' }),
     });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(403);
     const body = (await res.json()) as ErrorResponse;
-    expect(body.error.code).toBe('BAD_REQUEST');
+    expect(body.error.code).toBe('FORBIDDEN');
   });
 
-  test('returns 400 for invalid request body', async () => {
-    const { token } = await createAuthenticatedUserWithOrg();
-    const res = await app.request('/api/v1/transactions', {
-      method: 'POST',
-      headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accountId: 'x', type: 'invalid_type', amount: -50 }),
-    });
-    expect(res.status).toBe(400);
-    const body = (await res.json()) as ErrorResponse;
-    expect(body.error.code).toBe('VALIDATION_ERROR');
-  });
-
-  test('returns 404 when account not found', async () => {
+  test('returns 403 for non-existent account', async () => {
     const { token } = await createAuthenticatedUserWithOrg();
     const res = await app.request('/api/v1/transactions', {
       method: 'POST',
@@ -113,9 +101,22 @@ describe('POST /api/v1/transactions', () => {
         date: '2024-01-01',
       }),
     });
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(403);
     const body = (await res.json()) as ErrorResponse;
-    expect(body.error.code).toBe('NOT_FOUND');
+    expect(body.error.code).toBe('FORBIDDEN');
+  });
+
+  test('returns 400 for invalid request body', async () => {
+    const { token } = await createAuthenticatedUserWithOrg();
+    const account = await createAccount(token);
+    const res = await app.request('/api/v1/transactions', {
+      method: 'POST',
+      headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accountId: account.teamId, type: 'invalid_type', amount: -50 }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as ErrorResponse;
+    expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 
   test('creates an expense transaction', async () => {

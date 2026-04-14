@@ -2,7 +2,7 @@ import type { Context } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import type { PlatformPermission } from '@/lib/permissions/constants';
 import { type PLATFORM_ROLES, platformRoleHasPermission } from '@/lib/permissions/constants';
-import { resolveUserAccountRole } from '@/services/accounts.service';
+import { resolveUserAccountAccess } from '@/services/accounts.service';
 import type { AuthVariables } from './auth';
 
 // ---------------------------------------------------------------------------
@@ -70,6 +70,7 @@ export type AccountIdSource =
 export type AccountPermissionVariables = AuthVariables & {
   accountId: string;
   accountRole: AccountRole;
+  organizationId: string;
 };
 
 /**
@@ -108,8 +109,8 @@ export function requireAccountAccess(
       );
     }
 
-    const role = await resolveUserAccountRole(user.id, accountId);
-    if (!role) {
+    const access = await resolveUserAccountAccess(user.id, accountId);
+    if (!access) {
       return c.json(
         {
           error: {
@@ -123,7 +124,7 @@ export function requireAccountAccess(
 
     // Check minimum role level
     const roleLevel = { owner: 3, editor: 2, viewer: 1 } as const;
-    if (roleLevel[role] < roleLevel[minimumRole]) {
+    if (roleLevel[access.role] < roleLevel[minimumRole]) {
       return c.json(
         {
           error: {
@@ -136,7 +137,8 @@ export function requireAccountAccess(
     }
 
     c.set('accountId', accountId);
-    c.set('accountRole', role);
+    c.set('accountRole', access.role);
+    c.set('organizationId', access.organizationId);
 
     await next();
   });

@@ -12,7 +12,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { app } from '@/index';
 import {
-  addUserToTeam,
   bearerHeader,
   createAuthenticatedUserWithOrg,
   removeUserFromTeam,
@@ -373,7 +372,7 @@ describe('Phase 6: User2 cannot write as viewer', () => {
 // (WILL FAIL — sharing routes + per-account roles don't exist yet)
 // ==========================================================================
 
-describe.skip('Phase 7: Invite user2 to Account-B as editor', () => {
+describe('Phase 7: Invite user2 to Account-B as editor', () => {
   test('user1 invites user2 to Account-B with editor role', async () => {
     const response = await app.request('/api/v1/sharing/invite', {
       method: 'POST',
@@ -395,11 +394,14 @@ describe.skip('Phase 7: Invite user2 to Account-B as editor', () => {
     const body = (await response.json()) as { data: NotificationResponse[] };
     const invitation = body.data.find(
       (notification) =>
-        notification.type === 'account_invitation' && notification.status === 'pending'
+        notification.type === 'account_invitation' && notification.status === 'unread'
     );
     expect(invitation).toBeDefined();
 
-    const acceptResponse = await app.request(`/api/v1/notifications/${invitation?.id}/accept`, {
+    const invitationId = (invitation?.data as Record<string, string>)?.invitationId ?? '';
+    expect(invitationId).not.toBe('');
+
+    const acceptResponse = await app.request(`/api/v1/sharing/invitations/${invitationId}/accept`, {
       method: 'POST',
       headers: bearerHeader(user2Token),
     });
@@ -413,11 +415,6 @@ describe.skip('Phase 7: Invite user2 to Account-B as editor', () => {
 // ==========================================================================
 
 describe('Phase 8: User2 has viewer on A, editor on B', () => {
-  // Simulate: add user2 to Account-B team (until sharing routes exist)
-  beforeAll(async () => {
-    await addUserToTeam(user2Id, accountB.teamId);
-  });
-
   test('user2 can read Account-A (viewer)', async () => {
     const response = await app.request(`/api/v1/accounts/${accountA.id}`, {
       headers: bearerHeader(user2Token),
@@ -439,11 +436,10 @@ describe('Phase 8: User2 has viewer on A, editor on B', () => {
     expect(response.status).toBe(403);
   });
 
-  test.skip('user2 CAN create transaction on Account-B (editor)', async () => {
+  test('user2 CAN create transaction on Account-B (editor)', async () => {
     const response = await createTransaction(user2Token, accountB.teamId, 'expense', 2500, {
       payee: 'User2 expense',
     });
-    // WILL FAIL until per-account roles are implemented (currently team member = viewer)
     expect(response.status).toBe(201);
   });
 
@@ -460,12 +456,11 @@ describe('Phase 8: User2 has viewer on A, editor on B', () => {
 // Phase 9: User2 adds a transaction on Account-B
 // ==========================================================================
 
-describe.skip('Phase 9: User2 adds transaction on Account-B', () => {
+describe('Phase 9: User2 adds transaction on Account-B', () => {
   test('user2 creates an expense on Account-B', async () => {
     const response = await createTransaction(user2Token, accountB.teamId, 'expense', 7500, {
       payee: 'User2 restaurant',
     });
-    // WILL FAIL until per-account editor roles work
     expect(response.status).toBe(201);
   });
 });
@@ -482,23 +477,21 @@ describe('Phase 10: User1 verifies entries', () => {
     expect(body.data.length).toBe(6);
   });
 
-  test.skip('Account-B has original 6 + user2 entries', async () => {
+  test('Account-B has original 6 + user2 entries', async () => {
     const response = await listTransactions(user1Token, accountB.teamId);
     expect(response.status).toBe(200);
     const body = (await response.json()) as TransactionListResponse;
     // 6 original + 2 from user2 (phases 8 + 9) = 8
-    // WILL FAIL until per-account editor roles work (user2 can't create yet)
     expect(body.data.length).toBe(8);
   });
 
-  test.skip('user2 transactions appear with correct data', async () => {
+  test('user2 transactions appear with correct data', async () => {
     const response = await listTransactions(user1Token, accountB.teamId);
     const body = (await response.json()) as TransactionListResponse;
     const user2Transactions = body.data.filter(
       (transaction) =>
         transaction.payee === 'User2 restaurant' || transaction.payee === 'User2 expense'
     );
-    // WILL FAIL until per-account editor roles work
     expect(user2Transactions.length).toBe(2);
   });
 });
