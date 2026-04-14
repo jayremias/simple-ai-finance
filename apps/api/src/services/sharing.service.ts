@@ -18,6 +18,7 @@ export async function inviteUserToAccount(
   accountId: string,
   email: string,
   role: 'viewer' | 'editor',
+  inviterId: string,
   requestHeaders: Headers
 ) {
   const account = await getAccountById(accountId);
@@ -27,6 +28,36 @@ export async function inviteUserToAccount(
 
   if (account.organizationId !== organizationId) {
     throw new AccountNotFoundError(accountId);
+  }
+
+  // Self-invite check
+  const [inviter] = await db
+    .select({ email: user.email })
+    .from(user)
+    .where(eq(user.id, inviterId))
+    .limit(1);
+
+  if (inviter?.email === email) {
+    throw new SelfInviteError();
+  }
+
+  // Check if invited user already has team-level access
+  const [invitedUser] = await db
+    .select({ id: user.id })
+    .from(user)
+    .where(eq(user.email, email))
+    .limit(1);
+
+  if (invitedUser) {
+    const [existingAccess] = await db
+      .select()
+      .from(teamMember)
+      .where(and(eq(teamMember.teamId, account.teamId), eq(teamMember.userId, invitedUser.id)))
+      .limit(1);
+
+    if (existingAccess) {
+      throw new AlreadyHasAccessError(email);
+    }
   }
 
   const invitationResult = await auth.api.createInvitation({
@@ -40,12 +71,6 @@ export async function inviteUserToAccount(
   });
 
   // Create notification for the invited user if they already have an account
-  const [invitedUser] = await db
-    .select({ id: user.id })
-    .from(user)
-    .where(eq(user.email, email))
-    .limit(1);
-
   if (invitedUser) {
     await createNotification(invitedUser.id, 'account_invitation', 'Account invitation', {
       data: {
@@ -112,6 +137,63 @@ export async function acceptInvitation(invitationId: string, userId: string) {
   return { success: true };
 }
 
+/**
+ * Revoke a user's team-level access to an account.
+ * Removes the teamMember entry and cancels any pending invitations.
+ */
+export async function revokeAccountAccess(
+  accountId: string,
+  targetUserId: string,
+  organizationId: string
+) {
+  const account = await getAccountById(accountId);
+  if (!account) {
+    throw new AccountNotFoundError(accountId);
+  }
+
+  if (account.organizationId !== organizationId) {
+    throw new AccountNotFoundError(accountId);
+  }
+
+  // Verify user has team-level access
+  const [membership] = await db
+    .select()
+    .from(teamMember)
+    .where(and(eq(teamMember.teamId, account.teamId), eq(teamMember.userId, targetUserId)))
+    .limit(1);
+
+  if (!membership) {
+    throw new MemberNotFoundError(targetUserId);
+  }
+
+  // Remove team membership
+  await db
+    .delete(teamMember)
+    .where(and(eq(teamMember.teamId, account.teamId), eq(teamMember.userId, targetUserId)));
+
+  // Cancel any pending invitations for this user on this team
+  const [targetUser] = await db
+    .select({ email: user.email })
+    .from(user)
+    .where(eq(user.id, targetUserId))
+    .limit(1);
+
+  if (targetUser) {
+    await db
+      .update(invitation)
+      .set({ status: 'canceled' })
+      .where(
+        and(
+          eq(invitation.email, targetUser.email),
+          eq(invitation.teamId, account.teamId),
+          eq(invitation.status, 'pending')
+        )
+      );
+  }
+
+  return { success: true };
+}
+
 export class AccountNotFoundError extends Error {
   constructor(accountId: string) {
     super(`Account ${accountId} not found`);
@@ -123,5 +205,26 @@ export class InvitationNotFoundError extends Error {
   constructor(invitationId: string) {
     super(`Invitation ${invitationId} not found or already accepted`);
     this.name = 'InvitationNotFoundError';
+  }
+}
+
+export class SelfInviteError extends Error {
+  constructor() {
+    super('Cannot invite yourself');
+    this.name = 'SelfInviteError';
+  }
+}
+
+export class AlreadyHasAccessError extends Error {
+  constructor(email: string) {
+    super(`User ${email} already has access to this account`);
+    this.name = 'AlreadyHasAccessError';
+  }
+}
+
+export class MemberNotFoundError extends Error {
+  constructor(userId: string) {
+    super(`User ${userId} is not a member of this account`);
+    this.name = 'MemberNotFoundError';
   }
 }

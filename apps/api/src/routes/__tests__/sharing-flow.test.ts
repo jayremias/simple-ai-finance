@@ -11,12 +11,7 @@
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { app } from '@/index';
-import {
-  bearerHeader,
-  createAuthenticatedUserWithOrg,
-  removeUserFromTeam,
-  setActiveOrg,
-} from '@/tests/helpers/auth';
+import { bearerHeader, createAuthenticatedUserWithOrg, setActiveOrg } from '@/tests/helpers/auth';
 import { truncateAll } from '@/tests/helpers/db';
 
 // ---------------------------------------------------------------------------
@@ -502,23 +497,13 @@ describe('Phase 10: User1 verifies entries', () => {
 // ==========================================================================
 
 describe('Phase 11: Revoke user2 access to Account-B', () => {
-  test.skip('user1 revokes user2 access to Account-B via sharing route', async () => {
+  test('user1 revokes user2 access to Account-B via sharing route', async () => {
     const response = await app.request(`/api/v1/sharing/${accountB.id}`, {
       method: 'DELETE',
       headers: authJson(user1Token),
       body: JSON.stringify({ userId: user2Id }),
     });
     expect(response.status).toBe(200);
-  });
-
-  // Fallback: simulate revocation via direct DB (until sharing routes exist)
-  test('[simulated] remove user2 from Account-B team', async () => {
-    await removeUserFromTeam(user2Id, accountB.teamId);
-    // Verify via direct account access
-    const response = await app.request(`/api/v1/accounts/${accountB.id}`, {
-      headers: bearerHeader(user2Token),
-    });
-    expect(response.status).toBe(403);
   });
 });
 
@@ -708,7 +693,7 @@ describe('Phase 16: Edge cases', () => {
     expect([403, 404]).toContain(response.status);
   });
 
-  test.skip('user invites themselves returns 400', async () => {
+  test('user invites themselves returns 400', async () => {
     const response = await app.request('/api/v1/sharing/invite', {
       method: 'POST',
       headers: authJson(user1Token),
@@ -718,11 +703,10 @@ describe('Phase 16: Edge cases', () => {
         role: 'viewer',
       }),
     });
-    // WILL FAIL — sharing routes don't exist yet
     expect(response.status).toBe(400);
   });
 
-  test.skip('inviting user who already has access returns 409', async () => {
+  test('inviting user who already has access returns 409', async () => {
     // user2 still has team access to Account-A
     const response = await app.request('/api/v1/sharing/invite', {
       method: 'POST',
@@ -733,7 +717,6 @@ describe('Phase 16: Edge cases', () => {
         role: 'viewer',
       }),
     });
-    // WILL FAIL — sharing routes don't exist yet
     expect(response.status).toBe(409);
   });
 });
