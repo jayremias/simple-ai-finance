@@ -3,6 +3,7 @@ import { createMiddleware } from 'hono/factory';
 import type { PlatformPermission } from '@/lib/permissions/constants';
 import { type PLATFORM_ROLES, platformRoleHasPermission } from '@/lib/permissions/constants';
 import { resolveUserAccountAccess } from '@/services/accounts.service';
+import { getAccountIdForTransaction } from '@/services/transactions.service';
 import type { AuthVariables } from './auth';
 
 // ---------------------------------------------------------------------------
@@ -65,6 +66,7 @@ export type AccountRole = 'owner' | 'editor' | 'viewer';
 export type AccountIdSource =
   | { from: 'param'; name?: string }
   | { from: 'body'; name?: string }
+  | { from: 'query'; name?: string }
   | { from: 'lookup'; table: 'transaction' | 'statement' };
 
 export type AccountPermissionVariables = AuthVariables & {
@@ -158,8 +160,16 @@ async function resolveAccountId(c: Context, source: AccountIdSource): Promise<st
       return body[source.name ?? 'accountId'] ?? null;
     }
 
-    case 'lookup':
-      // TODO: Implement when transaction/statement tables exist.
+    case 'query':
+      return c.req.query(source.name ?? 'accountId') ?? null;
+
+    case 'lookup': {
+      if (source.table === 'transaction') {
+        const transactionId = c.req.param('id');
+        if (!transactionId) return null;
+        return getAccountIdForTransaction(transactionId);
+      }
       throw new Error(`Account ID lookup from "${source.table}" table is not yet implemented.`);
+    }
   }
 }

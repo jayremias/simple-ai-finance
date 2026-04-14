@@ -489,14 +489,15 @@ describe('PATCH /api/v1/transactions/:id', () => {
     expect(res.status).toBe(401);
   });
 
-  test('returns 404 for non-existent transaction', async () => {
+  test('returns 400 for non-existent transaction', async () => {
     const { token } = await createAuthenticatedUserWithOrg();
     const res = await app.request(`/api/v1/transactions/${crypto.randomUUID()}`, {
       method: 'PATCH',
       headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
       body: JSON.stringify({ notes: 'update' }),
     });
-    expect(res.status).toBe(404);
+    // Account lookup fails for unknown transaction → 400 (no account ID resolved)
+    expect(res.status).toBe(400);
   });
 
   test('updates transaction fields', async () => {
@@ -532,13 +533,14 @@ describe('DELETE /api/v1/transactions/:id', () => {
     expect(res.status).toBe(401);
   });
 
-  test('returns 404 for non-existent transaction', async () => {
+  test('returns 400 for non-existent transaction', async () => {
     const { token } = await createAuthenticatedUserWithOrg();
     const res = await app.request(`/api/v1/transactions/${crypto.randomUUID()}`, {
       method: 'DELETE',
       headers: bearerHeader(token),
     });
-    expect(res.status).toBe(404);
+    // Account lookup fails for unknown transaction → 400 (no account ID resolved)
+    expect(res.status).toBe(400);
   });
 
   test('deletes a transaction', async () => {

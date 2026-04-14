@@ -144,6 +144,15 @@ export async function listTransactions(organizationId: string, input: ListTransa
   return { data, nextCursor };
 }
 
+export async function getAccountIdForTransaction(transactionId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ accountId: transaction.accountId })
+    .from(transaction)
+    .where(eq(transaction.id, transactionId))
+    .limit(1);
+  return row?.accountId ?? null;
+}
+
 export async function getTransactionById(id: string, organizationId: string) {
   const [row] = await db
     .select()

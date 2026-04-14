@@ -4,10 +4,6 @@
  * Tests the complete user journey: account creation, transactions,
  * invitation, acceptance, access control (read vs write), role changes,
  * and access revocation.
- *
- * Some tests target features that don't exist yet (sharing routes,
- * notification routes, per-account roles). These will fail until
- * the features are implemented — they serve as the spec.
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { app } from '@/index';
@@ -119,6 +115,7 @@ let user2OrgId: string;
 let user2Id: string;
 let accountA: AccountResponse;
 let accountB: AccountResponse;
+let user2TransactionId: string;
 
 // ---------------------------------------------------------------------------
 // Test suite
@@ -253,7 +250,6 @@ describe('Phase 2: Populate accounts', () => {
 
 // ==========================================================================
 // Phase 3: User1 invites User2 to Account-A as viewer
-// (WILL FAIL — sharing routes don't exist yet)
 // ==========================================================================
 
 describe('Phase 3: Invite user2 to Account-A as viewer', () => {
@@ -273,7 +269,6 @@ describe('Phase 3: Invite user2 to Account-A as viewer', () => {
 
 // ==========================================================================
 // Phase 4: User2 checks notifications and accepts
-// (WILL FAIL — notification routes don't exist yet)
 // ==========================================================================
 
 describe('Phase 4: User2 checks notifications and accepts invite', () => {
@@ -364,7 +359,6 @@ describe('Phase 6: User2 cannot write as viewer', () => {
 
 // ==========================================================================
 // Phase 7: User1 gives User2 editor access to Account-B
-// (WILL FAIL — sharing routes + per-account roles don't exist yet)
 // ==========================================================================
 
 describe('Phase 7: Invite user2 to Account-B as editor', () => {
@@ -406,7 +400,6 @@ describe('Phase 7: Invite user2 to Account-B as editor', () => {
 
 // ==========================================================================
 // Phase 8: User2 verifies correct access levels on both accounts
-// (Per-account roles WILL FAIL — currently team member = viewer only)
 // ==========================================================================
 
 describe('Phase 8: User2 has viewer on A, editor on B', () => {
@@ -436,6 +429,23 @@ describe('Phase 8: User2 has viewer on A, editor on B', () => {
       payee: 'User2 expense',
     });
     expect(response.status).toBe(201);
+    const body = (await response.json()) as TransactionResponse;
+    user2TransactionId = body.id;
+  });
+
+  test('user2 CAN update Account-B name (editor)', async () => {
+    const response = await app.request(`/api/v1/accounts/${accountB.id}`, {
+      method: 'PATCH',
+      headers: authJson(user2Token),
+      body: JSON.stringify({ name: 'Account B Renamed' }),
+    });
+    expect(response.status).toBe(200);
+    // Restore original name for subsequent tests
+    await app.request(`/api/v1/accounts/${accountB.id}`, {
+      method: 'PATCH',
+      headers: authJson(user1Token),
+      body: JSON.stringify({ name: 'Account B' }),
+    });
   });
 
   test('user2 cannot delete Account-B (editor, not owner)', async () => {
@@ -444,6 +454,22 @@ describe('Phase 8: User2 has viewer on A, editor on B', () => {
       headers: bearerHeader(user2Token),
     });
     expect(response.status).toBe(403);
+  });
+});
+
+// ==========================================================================
+// Phase 9a: Shared user reads transactions
+// ==========================================================================
+
+describe('Phase 9a: Shared user reads transactions', () => {
+  test('user2 can list transactions on Account-B (editor)', async () => {
+    const response = await listTransactions(user2Token, accountB.teamId);
+    expect(response.status).toBe(200);
+  });
+
+  test('user2 can list transactions on Account-A (viewer)', async () => {
+    const response = await listTransactions(user2Token, accountA.teamId);
+    expect(response.status).toBe(200);
   });
 });
 
@@ -461,6 +487,29 @@ describe('Phase 9: User2 adds transaction on Account-B', () => {
 });
 
 // ==========================================================================
+// Phase 9b: Shared user manages transactions
+// ==========================================================================
+
+describe('Phase 9b: Shared user manages transactions', () => {
+  test('user2 can update own transaction on Account-B (editor)', async () => {
+    const response = await app.request(`/api/v1/transactions/${user2TransactionId}`, {
+      method: 'PATCH',
+      headers: authJson(user2Token),
+      body: JSON.stringify({ payee: 'Updated payee' }),
+    });
+    expect(response.status).toBe(200);
+  });
+
+  test('user2 can delete own transaction on Account-B (editor)', async () => {
+    const response = await app.request(`/api/v1/transactions/${user2TransactionId}`, {
+      method: 'DELETE',
+      headers: bearerHeader(user2Token),
+    });
+    expect(response.status).toBe(200);
+  });
+});
+
+// ==========================================================================
 // Phase 10: User1 verifies all entries are correct
 // ==========================================================================
 
@@ -472,28 +521,27 @@ describe('Phase 10: User1 verifies entries', () => {
     expect(body.data.length).toBe(6);
   });
 
-  test('Account-B has original 6 + user2 entries', async () => {
+  test('Account-B has original 6 + user2 remaining entries', async () => {
     const response = await listTransactions(user1Token, accountB.teamId);
     expect(response.status).toBe(200);
     const body = (await response.json()) as TransactionListResponse;
-    // 6 original + 2 from user2 (phases 8 + 9) = 8
-    expect(body.data.length).toBe(8);
+    // 6 original + 2 from user2 - 1 deleted in Phase 9b = 7
+    expect(body.data.length).toBe(7);
   });
 
-  test('user2 transactions appear with correct data', async () => {
+  test('user2 remaining transaction appears with correct data', async () => {
     const response = await listTransactions(user1Token, accountB.teamId);
     const body = (await response.json()) as TransactionListResponse;
     const user2Transactions = body.data.filter(
-      (transaction) =>
-        transaction.payee === 'User2 restaurant' || transaction.payee === 'User2 expense'
+      (transaction) => transaction.payee === 'User2 restaurant'
     );
-    expect(user2Transactions.length).toBe(2);
+    // "User2 expense" was deleted in Phase 9b, only "User2 restaurant" remains
+    expect(user2Transactions.length).toBe(1);
   });
 });
 
 // ==========================================================================
 // Phase 11: User1 removes User2's access to Account-B
-// (WILL FAIL — sharing/revoke routes don't exist yet)
 // ==========================================================================
 
 describe('Phase 11: Revoke user2 access to Account-B', () => {
@@ -718,5 +766,30 @@ describe('Phase 16: Edge cases', () => {
       }),
     });
     expect(response.status).toBe(409);
+  });
+
+  test('revoking access for user who has none returns 404', async () => {
+    const response = await app.request(`/api/v1/sharing/${accountA.id}`, {
+      method: 'DELETE',
+      headers: authJson(user1Token),
+      body: JSON.stringify({ userId: crypto.randomUUID() }),
+    });
+    expect(response.status).toBe(404);
+  });
+
+  test('non-owner cannot invite users', async () => {
+    // user2 is not an owner of user1's org
+    await setActiveOrg(user2Token, user1OrgId);
+    const response = await app.request('/api/v1/sharing/invite', {
+      method: 'POST',
+      headers: authJson(user2Token),
+      body: JSON.stringify({
+        accountId: accountA.id,
+        email: 'user3@test.com',
+        role: 'viewer',
+      }),
+    });
+    expect(response.status).toBe(403);
+    await setActiveOrg(user2Token, user2OrgId);
   });
 });
