@@ -104,6 +104,19 @@ export async function getAccountById(accountId: string) {
   return withBalance(account, txSums);
 }
 
+export async function getAccountByTeamId(teamId: string) {
+  const [account] = await db
+    .select()
+    .from(financialAccount)
+    .where(eq(financialAccount.teamId, teamId))
+    .limit(1);
+
+  if (!account) return null;
+
+  const txSums = await fetchTxSums([account.teamId]);
+  return withBalance(account, txSums);
+}
+
 export async function updateAccount(accountId: string, data: UpdateAccountInput) {
   const updates: Record<string, unknown> = {};
 
@@ -153,15 +166,20 @@ export async function deleteAccount(accountId: string) {
   return account;
 }
 
+export type AccountAccess = {
+  role: 'owner' | 'editor' | 'viewer';
+  organizationId: string;
+};
+
 /**
  * Check if a user has access to an account via team membership or org membership.
- * Returns the user's role or null if no access.
+ * Returns the user's role and the account's organizationId, or null if no access.
  */
-export async function resolveUserAccountRole(
+export async function resolveUserAccountAccess(
   userId: string,
   accountId: string
-): Promise<'owner' | 'editor' | 'viewer' | null> {
-  const account = await getAccountById(accountId);
+): Promise<AccountAccess | null> {
+  const account = (await getAccountById(accountId)) ?? (await getAccountByTeamId(accountId));
   if (!account) return null;
 
   // Check org membership (determines role for all accounts in the org)
@@ -179,14 +197,29 @@ export async function resolveUserAccountRole(
       .where(and(eq(teamMember.teamId, account.teamId), eq(teamMember.userId, userId)))
       .limit(1);
 
-    return teamMembership ? 'viewer' : null;
+    const teamRole = teamMembership?.role as 'owner' | 'editor' | 'viewer' | undefined;
+    if (!teamRole) return null;
+    return { role: teamRole, organizationId: account.organizationId };
   }
 
   // Map org role to account role
   const role = orgMember.role;
-  if (role === 'owner') return 'owner';
-  if (role === 'editor') return 'editor';
-  if (role === 'member' || role === 'viewer') return 'viewer';
+  if (role === 'owner') return { role: 'owner', organizationId: account.organizationId };
+  if (role === 'editor') return { role: 'editor', organizationId: account.organizationId };
+  if (role === 'member' || role === 'viewer')
+    return { role: 'viewer', organizationId: account.organizationId };
   console.warn(`Unknown org role "${role}" for user ${userId}`);
   return null;
+}
+
+/**
+ * Check if a user has access to an account via team membership or org membership.
+ * Returns the user's role or null if no access.
+ */
+export async function resolveUserAccountRole(
+  userId: string,
+  accountId: string
+): Promise<'owner' | 'editor' | 'viewer' | null> {
+  const access = await resolveUserAccountAccess(userId, accountId);
+  return access?.role ?? null;
 }

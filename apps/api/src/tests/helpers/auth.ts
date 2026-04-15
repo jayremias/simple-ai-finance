@@ -137,11 +137,16 @@ export function bearerHeader(token: string): Record<string, string> {
  * Adds a user to a team (account-level sharing).
  * This simulates accepting an invitation to a specific account.
  */
-export async function addUserToTeam(userId: string, teamId: string): Promise<void> {
+export async function addUserToTeam(
+  userId: string,
+  teamId: string,
+  role: 'owner' | 'editor' | 'viewer'
+): Promise<void> {
   await db.insert(teamMember).values({
     id: crypto.randomUUID(),
     teamId,
     userId,
+    role,
     createdAt: new Date(),
   });
 }

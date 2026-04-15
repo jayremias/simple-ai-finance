@@ -7,7 +7,8 @@
     "build": "turbo build",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "test": "bun --filter '*' test",
+    "typecheck": "bun --cwd apps/api tsc --noEmit",
+    "test": "turbo test",
     "mobile": "bun --cwd apps/mobile run start",
     "mobile:ios": "bun --cwd apps/mobile run ios",
     "mobile:android": "bun --cwd apps/mobile run android"

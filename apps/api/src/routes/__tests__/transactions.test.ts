@@ -77,31 +77,19 @@ describe('POST /api/v1/transactions', () => {
     expect(res.status).toBe(401);
   });
 
-  test('returns 400 when session has no active organization', async () => {
+  test('returns 403 when user has no access to account', async () => {
     const { token } = await createAuthenticatedUser();
     const res = await app.request('/api/v1/transactions', {
       method: 'POST',
       headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
       body: JSON.stringify({ accountId: 'x', type: 'expense', amount: 100, date: '2024-01-01' }),
     });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(403);
     const body = (await res.json()) as ErrorResponse;
-    expect(body.error.code).toBe('BAD_REQUEST');
+    expect(body.error.code).toBe('FORBIDDEN');
   });
 
-  test('returns 400 for invalid request body', async () => {
-    const { token } = await createAuthenticatedUserWithOrg();
-    const res = await app.request('/api/v1/transactions', {
-      method: 'POST',
-      headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accountId: 'x', type: 'invalid_type', amount: -50 }),
-    });
-    expect(res.status).toBe(400);
-    const body = (await res.json()) as ErrorResponse;
-    expect(body.error.code).toBe('VALIDATION_ERROR');
-  });
-
-  test('returns 404 when account not found', async () => {
+  test('returns 403 for non-existent account', async () => {
     const { token } = await createAuthenticatedUserWithOrg();
     const res = await app.request('/api/v1/transactions', {
       method: 'POST',
@@ -113,9 +101,22 @@ describe('POST /api/v1/transactions', () => {
         date: '2024-01-01',
       }),
     });
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(403);
     const body = (await res.json()) as ErrorResponse;
-    expect(body.error.code).toBe('NOT_FOUND');
+    expect(body.error.code).toBe('FORBIDDEN');
+  });
+
+  test('returns 400 for invalid request body', async () => {
+    const { token } = await createAuthenticatedUserWithOrg();
+    const account = await createAccount(token);
+    const res = await app.request('/api/v1/transactions', {
+      method: 'POST',
+      headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accountId: account.teamId, type: 'invalid_type', amount: -50 }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as ErrorResponse;
+    expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 
   test('creates an expense transaction', async () => {
@@ -429,12 +430,13 @@ describe('GET /api/v1/transactions/:id', () => {
     expect(res.status).toBe(401);
   });
 
-  test('returns 404 for non-existent transaction', async () => {
+  test('returns 400 for non-existent transaction', async () => {
     const { token } = await createAuthenticatedUserWithOrg();
     const res = await app.request(`/api/v1/transactions/${crypto.randomUUID()}`, {
       headers: bearerHeader(token),
     });
-    expect(res.status).toBe(404);
+    // Account lookup fails for unknown transaction → 400 (no account ID resolved)
+    expect(res.status).toBe(400);
   });
 
   test('returns transaction by id', async () => {
@@ -457,7 +459,7 @@ describe('GET /api/v1/transactions/:id', () => {
     expect(body.notes).toBe('lunch');
   });
 
-  test('returns 404 for transaction in different org', async () => {
+  test('returns 403 for transaction in different org', async () => {
     const { token: token1 } = await createAuthenticatedUserWithOrg();
     const account = await createAccount(token1);
     const tx = await createTransaction(token1, {
@@ -474,7 +476,8 @@ describe('GET /api/v1/transactions/:id', () => {
     const res = await app.request(`/api/v1/transactions/${tx.id}`, {
       headers: bearerHeader(token2),
     });
-    expect(res.status).toBe(404);
+    // User has no access to this account → 403
+    expect(res.status).toBe(403);
   });
 });
 
@@ -488,14 +491,15 @@ describe('PATCH /api/v1/transactions/:id', () => {
     expect(res.status).toBe(401);
   });
 
-  test('returns 404 for non-existent transaction', async () => {
+  test('returns 400 for non-existent transaction', async () => {
     const { token } = await createAuthenticatedUserWithOrg();
     const res = await app.request(`/api/v1/transactions/${crypto.randomUUID()}`, {
       method: 'PATCH',
       headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
       body: JSON.stringify({ notes: 'update' }),
     });
-    expect(res.status).toBe(404);
+    // Account lookup fails for unknown transaction → 400 (no account ID resolved)
+    expect(res.status).toBe(400);
   });
 
   test('updates transaction fields', async () => {
@@ -531,13 +535,14 @@ describe('DELETE /api/v1/transactions/:id', () => {
     expect(res.status).toBe(401);
   });
 
-  test('returns 404 for non-existent transaction', async () => {
+  test('returns 400 for non-existent transaction', async () => {
     const { token } = await createAuthenticatedUserWithOrg();
     const res = await app.request(`/api/v1/transactions/${crypto.randomUUID()}`, {
       method: 'DELETE',
       headers: bearerHeader(token),
     });
-    expect(res.status).toBe(404);
+    // Account lookup fails for unknown transaction → 400 (no account ID resolved)
+    expect(res.status).toBe(400);
   });
 
   test('deletes a transaction', async () => {
@@ -559,7 +564,8 @@ describe('DELETE /api/v1/transactions/:id', () => {
     const getRes = await app.request(`/api/v1/transactions/${tx.id}`, {
       headers: bearerHeader(token),
     });
-    expect(getRes.status).toBe(404);
+    // Deleted transaction can't be looked up → 400 (no account ID resolved)
+    expect(getRes.status).toBe(400);
   });
 
   test('deletes both sides of a transfer', async () => {

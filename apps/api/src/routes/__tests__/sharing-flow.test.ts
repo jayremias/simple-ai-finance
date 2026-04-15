@@ -4,20 +4,10 @@
  * Tests the complete user journey: account creation, transactions,
  * invitation, acceptance, access control (read vs write), role changes,
  * and access revocation.
- *
- * Some tests target features that don't exist yet (sharing routes,
- * notification routes, per-account roles). These will fail until
- * the features are implemented — they serve as the spec.
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { app } from '@/index';
-import {
-  addUserToTeam,
-  bearerHeader,
-  createAuthenticatedUserWithOrg,
-  removeUserFromTeam,
-  setActiveOrg,
-} from '@/tests/helpers/auth';
+import { bearerHeader, createAuthenticatedUserWithOrg, setActiveOrg } from '@/tests/helpers/auth';
 import { truncateAll } from '@/tests/helpers/db';
 
 // ---------------------------------------------------------------------------
@@ -125,6 +115,9 @@ let user2OrgId: string;
 let user2Id: string;
 let accountA: AccountResponse;
 let accountB: AccountResponse;
+let user2TransactionId: string;
+let user1AccountBTransactionId: string;
+let firstInvitationId: string;
 
 // ---------------------------------------------------------------------------
 // Test suite
@@ -219,6 +212,8 @@ describe('Phase 2: Populate accounts', () => {
     });
     expect(response1.status).toBe(201);
     expect(response2.status).toBe(201);
+    const body = (await response1.json()) as TransactionResponse;
+    user1AccountBTransactionId = body.id;
   });
 
   test('user1 adds 2 incomes to Account-B', async () => {
@@ -259,10 +254,9 @@ describe('Phase 2: Populate accounts', () => {
 
 // ==========================================================================
 // Phase 3: User1 invites User2 to Account-A as viewer
-// (WILL FAIL — sharing routes don't exist yet)
 // ==========================================================================
 
-describe.skip('Phase 3: Invite user2 to Account-A as viewer', () => {
+describe('Phase 3: Invite user2 to Account-A as viewer', () => {
   test('user1 invites user2 to Account-A with viewer role', async () => {
     const response = await app.request('/api/v1/sharing/invite', {
       method: 'POST',
@@ -279,11 +273,10 @@ describe.skip('Phase 3: Invite user2 to Account-A as viewer', () => {
 
 // ==========================================================================
 // Phase 4: User2 checks notifications and accepts
-// (WILL FAIL — notification routes don't exist yet)
 // ==========================================================================
 
-describe.skip('Phase 4: User2 checks notifications and accepts invite', () => {
-  let invitationNotificationId: string;
+describe('Phase 4: User2 checks notifications and accepts invite', () => {
+  let invitationId: string;
 
   test('user2 sees pending invitation in notifications', async () => {
     const response = await app.request('/api/v1/notifications', {
@@ -293,14 +286,18 @@ describe.skip('Phase 4: User2 checks notifications and accepts invite', () => {
     const body = (await response.json()) as { data: NotificationResponse[] };
     expect(body.data.length).toBeGreaterThanOrEqual(1);
 
-    const invitation = body.data.find((notification) => notification.type === 'account_invitation');
-    expect(invitation).toBeDefined();
-    expect(invitation?.status).toBe('pending');
-    invitationNotificationId = invitation?.id ?? '';
+    const invitationNotification = body.data.find(
+      (notification) => notification.type === 'account_invitation'
+    );
+    expect(invitationNotification).toBeDefined();
+    expect(invitationNotification?.status).toBe('unread');
+    invitationId = (invitationNotification?.data as Record<string, string>)?.invitationId ?? '';
+    expect(invitationId).not.toBe('');
+    firstInvitationId = invitationId;
   });
 
   test('user2 accepts the invitation', async () => {
-    const response = await app.request(`/api/v1/notifications/${invitationNotificationId}/accept`, {
+    const response = await app.request(`/api/v1/sharing/invitations/${invitationId}/accept`, {
       method: 'POST',
       headers: bearerHeader(user2Token),
     });
@@ -313,11 +310,6 @@ describe.skip('Phase 4: User2 checks notifications and accepts invite', () => {
 // ==========================================================================
 
 describe('Phase 5: User2 viewer access to Account-A', () => {
-  // Simulate invitation acceptance via direct DB (until sharing routes exist)
-  beforeAll(async () => {
-    await addUserToTeam(user2Id, accountA.teamId);
-  });
-
   test('user2 can read Account-A', async () => {
     const response = await app.request(`/api/v1/accounts/${accountA.id}`, {
       headers: bearerHeader(user2Token),
@@ -372,10 +364,9 @@ describe('Phase 6: User2 cannot write as viewer', () => {
 
 // ==========================================================================
 // Phase 7: User1 gives User2 editor access to Account-B
-// (WILL FAIL — sharing routes + per-account roles don't exist yet)
 // ==========================================================================
 
-describe.skip('Phase 7: Invite user2 to Account-B as editor', () => {
+describe('Phase 7: Invite user2 to Account-B as editor', () => {
   test('user1 invites user2 to Account-B with editor role', async () => {
     const response = await app.request('/api/v1/sharing/invite', {
       method: 'POST',
@@ -397,11 +388,14 @@ describe.skip('Phase 7: Invite user2 to Account-B as editor', () => {
     const body = (await response.json()) as { data: NotificationResponse[] };
     const invitation = body.data.find(
       (notification) =>
-        notification.type === 'account_invitation' && notification.status === 'pending'
+        notification.type === 'account_invitation' && notification.status === 'unread'
     );
     expect(invitation).toBeDefined();
 
-    const acceptResponse = await app.request(`/api/v1/notifications/${invitation?.id}/accept`, {
+    const invitationId = (invitation?.data as Record<string, string>)?.invitationId ?? '';
+    expect(invitationId).not.toBe('');
+
+    const acceptResponse = await app.request(`/api/v1/sharing/invitations/${invitationId}/accept`, {
       method: 'POST',
       headers: bearerHeader(user2Token),
     });
@@ -411,15 +405,9 @@ describe.skip('Phase 7: Invite user2 to Account-B as editor', () => {
 
 // ==========================================================================
 // Phase 8: User2 verifies correct access levels on both accounts
-// (Per-account roles WILL FAIL — currently team member = viewer only)
 // ==========================================================================
 
 describe('Phase 8: User2 has viewer on A, editor on B', () => {
-  // Simulate: add user2 to Account-B team (until sharing routes exist)
-  beforeAll(async () => {
-    await addUserToTeam(user2Id, accountB.teamId);
-  });
-
   test('user2 can read Account-A (viewer)', async () => {
     const response = await app.request(`/api/v1/accounts/${accountA.id}`, {
       headers: bearerHeader(user2Token),
@@ -441,12 +429,28 @@ describe('Phase 8: User2 has viewer on A, editor on B', () => {
     expect(response.status).toBe(403);
   });
 
-  test.skip('user2 CAN create transaction on Account-B (editor)', async () => {
+  test('user2 CAN create transaction on Account-B (editor)', async () => {
     const response = await createTransaction(user2Token, accountB.teamId, 'expense', 2500, {
       payee: 'User2 expense',
     });
-    // WILL FAIL until per-account roles are implemented (currently team member = viewer)
     expect(response.status).toBe(201);
+    const body = (await response.json()) as TransactionResponse;
+    user2TransactionId = body.id;
+  });
+
+  test('user2 CAN update Account-B name (editor)', async () => {
+    const response = await app.request(`/api/v1/accounts/${accountB.id}`, {
+      method: 'PATCH',
+      headers: authJson(user2Token),
+      body: JSON.stringify({ name: 'Account B Renamed' }),
+    });
+    expect(response.status).toBe(200);
+    // Restore original name for subsequent tests
+    await app.request(`/api/v1/accounts/${accountB.id}`, {
+      method: 'PATCH',
+      headers: authJson(user1Token),
+      body: JSON.stringify({ name: 'Account B' }),
+    });
   });
 
   test('user2 cannot delete Account-B (editor, not owner)', async () => {
@@ -459,16 +463,70 @@ describe('Phase 8: User2 has viewer on A, editor on B', () => {
 });
 
 // ==========================================================================
+// Phase 9a: Shared user reads transactions
+// ==========================================================================
+
+describe('Phase 9a: Shared user reads transactions', () => {
+  test('user2 can list transactions on Account-B (editor)', async () => {
+    const response = await listTransactions(user2Token, accountB.teamId);
+    expect(response.status).toBe(200);
+  });
+
+  test('user2 can list transactions on Account-A (viewer)', async () => {
+    const response = await listTransactions(user2Token, accountA.teamId);
+    expect(response.status).toBe(200);
+  });
+
+  test('user2 can read single transaction by ID on Account-B (editor)', async () => {
+    const response = await app.request(`/api/v1/transactions/${user1AccountBTransactionId}`, {
+      headers: bearerHeader(user2Token),
+    });
+    expect(response.status).toBe(200);
+  });
+});
+
+// ==========================================================================
 // Phase 9: User2 adds a transaction on Account-B
 // ==========================================================================
 
-describe.skip('Phase 9: User2 adds transaction on Account-B', () => {
+describe('Phase 9: User2 adds transaction on Account-B', () => {
   test('user2 creates an expense on Account-B', async () => {
     const response = await createTransaction(user2Token, accountB.teamId, 'expense', 7500, {
       payee: 'User2 restaurant',
     });
-    // WILL FAIL until per-account editor roles work
     expect(response.status).toBe(201);
+  });
+});
+
+// ==========================================================================
+// Phase 9b: Shared user manages transactions
+// ==========================================================================
+
+describe('Phase 9b: Shared user manages transactions', () => {
+  test('user2 can update own transaction on Account-B (editor)', async () => {
+    const response = await app.request(`/api/v1/transactions/${user2TransactionId}`, {
+      method: 'PATCH',
+      headers: authJson(user2Token),
+      body: JSON.stringify({ payee: 'Updated payee' }),
+    });
+    expect(response.status).toBe(200);
+  });
+
+  test('user2 can update user1 transaction on Account-B (editor)', async () => {
+    const response = await app.request(`/api/v1/transactions/${user1AccountBTransactionId}`, {
+      method: 'PATCH',
+      headers: authJson(user2Token),
+      body: JSON.stringify({ notes: 'Updated by user2' }),
+    });
+    expect(response.status).toBe(200);
+  });
+
+  test('user2 can delete own transaction on Account-B (editor)', async () => {
+    const response = await app.request(`/api/v1/transactions/${user2TransactionId}`, {
+      method: 'DELETE',
+      headers: bearerHeader(user2Token),
+    });
+    expect(response.status).toBe(200);
   });
 });
 
@@ -484,50 +542,37 @@ describe('Phase 10: User1 verifies entries', () => {
     expect(body.data.length).toBe(6);
   });
 
-  test.skip('Account-B has original 6 + user2 entries', async () => {
+  test('Account-B has original 6 + user2 remaining entries', async () => {
     const response = await listTransactions(user1Token, accountB.teamId);
     expect(response.status).toBe(200);
     const body = (await response.json()) as TransactionListResponse;
-    // 6 original + 2 from user2 (phases 8 + 9) = 8
-    // WILL FAIL until per-account editor roles work (user2 can't create yet)
-    expect(body.data.length).toBe(8);
+    // 6 original + 2 from user2 - 1 deleted in Phase 9b = 7
+    expect(body.data.length).toBe(7);
   });
 
-  test.skip('user2 transactions appear with correct data', async () => {
+  test('user2 remaining transaction appears with correct data', async () => {
     const response = await listTransactions(user1Token, accountB.teamId);
     const body = (await response.json()) as TransactionListResponse;
     const user2Transactions = body.data.filter(
-      (transaction) =>
-        transaction.payee === 'User2 restaurant' || transaction.payee === 'User2 expense'
+      (transaction) => transaction.payee === 'User2 restaurant'
     );
-    // WILL FAIL until per-account editor roles work
-    expect(user2Transactions.length).toBe(2);
+    // "User2 expense" was deleted in Phase 9b, only "User2 restaurant" remains
+    expect(user2Transactions.length).toBe(1);
   });
 });
 
 // ==========================================================================
 // Phase 11: User1 removes User2's access to Account-B
-// (WILL FAIL — sharing/revoke routes don't exist yet)
 // ==========================================================================
 
 describe('Phase 11: Revoke user2 access to Account-B', () => {
-  test.skip('user1 revokes user2 access to Account-B via sharing route', async () => {
+  test('user1 revokes user2 access to Account-B via sharing route', async () => {
     const response = await app.request(`/api/v1/sharing/${accountB.id}`, {
       method: 'DELETE',
       headers: authJson(user1Token),
       body: JSON.stringify({ userId: user2Id }),
     });
     expect(response.status).toBe(200);
-  });
-
-  // Fallback: simulate revocation via direct DB (until sharing routes exist)
-  test('[simulated] remove user2 from Account-B team', async () => {
-    await removeUserFromTeam(user2Id, accountB.teamId);
-    // Verify via direct account access
-    const response = await app.request(`/api/v1/accounts/${accountB.id}`, {
-      headers: bearerHeader(user2Token),
-    });
-    expect(response.status).toBe(403);
   });
 });
 
@@ -717,7 +762,7 @@ describe('Phase 16: Edge cases', () => {
     expect([403, 404]).toContain(response.status);
   });
 
-  test.skip('user invites themselves returns 400', async () => {
+  test('user invites themselves returns 400', async () => {
     const response = await app.request('/api/v1/sharing/invite', {
       method: 'POST',
       headers: authJson(user1Token),
@@ -727,11 +772,10 @@ describe('Phase 16: Edge cases', () => {
         role: 'viewer',
       }),
     });
-    // WILL FAIL — sharing routes don't exist yet
     expect(response.status).toBe(400);
   });
 
-  test.skip('inviting user who already has access returns 409', async () => {
+  test('inviting user who already has access returns 409', async () => {
     // user2 still has team access to Account-A
     const response = await app.request('/api/v1/sharing/invite', {
       method: 'POST',
@@ -742,7 +786,98 @@ describe('Phase 16: Edge cases', () => {
         role: 'viewer',
       }),
     });
-    // WILL FAIL — sharing routes don't exist yet
     expect(response.status).toBe(409);
+  });
+
+  test('revoking access for user who has none returns 404', async () => {
+    const response = await app.request(`/api/v1/sharing/${accountA.id}`, {
+      method: 'DELETE',
+      headers: authJson(user1Token),
+      body: JSON.stringify({ userId: crypto.randomUUID() }),
+    });
+    expect(response.status).toBe(404);
+  });
+
+  test('non-owner cannot invite users', async () => {
+    // user2 is not an owner of user1's org
+    await setActiveOrg(user2Token, user1OrgId);
+    const response = await app.request('/api/v1/sharing/invite', {
+      method: 'POST',
+      headers: authJson(user2Token),
+      body: JSON.stringify({
+        accountId: accountA.id,
+        email: 'user3@test.com',
+        role: 'viewer',
+      }),
+    });
+    expect(response.status).toBe(403);
+    await setActiveOrg(user2Token, user2OrgId);
+  });
+
+  test('double-accept of invitation returns 404', async () => {
+    // firstInvitationId was already accepted in Phase 4
+    const response = await app.request(`/api/v1/sharing/invitations/${firstInvitationId}/accept`, {
+      method: 'POST',
+      headers: bearerHeader(user2Token),
+    });
+    expect(response.status).toBe(404);
+  });
+
+  test('accepting invitation meant for another email returns 404', async () => {
+    // Invite user3@test.com, then user2 tries to accept it
+    const inviteResponse = await app.request('/api/v1/sharing/invite', {
+      method: 'POST',
+      headers: authJson(user1Token),
+      body: JSON.stringify({
+        accountId: accountA.id,
+        email: 'user3@test.com',
+        role: 'viewer',
+      }),
+    });
+    expect(inviteResponse.status).toBe(201);
+    const invitation = (await inviteResponse.json()) as { id: string };
+
+    const response = await app.request(`/api/v1/sharing/invitations/${invitation.id}/accept`, {
+      method: 'POST',
+      headers: bearerHeader(user2Token),
+    });
+    expect(response.status).toBe(404);
+  });
+
+  test('notification marked as read after acceptance', async () => {
+    // The Phase 4 acceptance should have marked the notification as read
+    const response = await app.request('/api/v1/notifications', {
+      headers: bearerHeader(user2Token),
+    });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { data: NotificationResponse[] };
+    const readNotifications = body.data.filter(
+      (notification) => notification.type === 'account_invitation' && notification.status === 'read'
+    );
+    expect(readNotifications.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('transfer to inaccessible account fails', async () => {
+    // user2 (editor on Account-B) tries to transfer to a new account they have no access to
+    // First, user1 creates Account-C
+    const accountCResponse = await app.request('/api/v1/accounts', {
+      method: 'POST',
+      headers: authJson(user1Token),
+      body: JSON.stringify({
+        name: 'Account C',
+        type: 'checking',
+        currency: 'USD',
+        initialBalance: 0,
+      }),
+    });
+    expect(accountCResponse.status).toBe(201);
+    const accountC = (await accountCResponse.json()) as { teamId: string };
+
+    // user2 tries to transfer from Account-B to Account-C (no access)
+    const response = await createTransaction(user2Token, accountB.teamId, 'transfer', 1000, {
+      payee: 'Unauthorized transfer',
+      toTeamId: accountC.teamId,
+    });
+    expect(response.status).toBe(403);
   });
 });

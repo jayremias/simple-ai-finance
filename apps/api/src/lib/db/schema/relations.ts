@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import { account, session, user } from './auth';
 import { category } from './category';
 import { financialAccount } from './financial-account';
+import { notification } from './notification';
 import { invitation, member, organization } from './organization';
 import { tag } from './tag';
 import { team, teamMember } from './team';
@@ -14,6 +15,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
   members: many(member),
   invitations: many(invitation),
   teamMembers: many(teamMember),
+  notifications: many(notification),
   profile: one(userProfile, {
     fields: [user.id],
     references: [userProfile.userId],
@@ -140,6 +142,13 @@ export const transactionRelations = relations(transaction, ({ one, many }) => ({
     references: [category.id],
   }),
   transactionTags: many(transactionTag),
+}));
+
+export const notificationRelations = relations(notification, ({ one }) => ({
+  user: one(user, {
+    fields: [notification.userId],
+    references: [user.id],
+  }),
 }));
 
 export const transactionTagRelations = relations(transactionTag, ({ one }) => ({

@@ -1,6 +1,7 @@
 export * from './auth';
 export * from './category';
 export * from './financial-account';
+export * from './notification';
 export * from './organization';
 export * from './recurring';
 export * from './relations';

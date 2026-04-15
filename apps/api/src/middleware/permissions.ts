@@ -2,7 +2,8 @@ import type { Context } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import type { PlatformPermission } from '@/lib/permissions/constants';
 import { type PLATFORM_ROLES, platformRoleHasPermission } from '@/lib/permissions/constants';
-import { resolveUserAccountRole } from '@/services/accounts.service';
+import { resolveUserAccountAccess } from '@/services/accounts.service';
+import { getAccountIdForTransaction } from '@/services/transactions.service';
 import type { AuthVariables } from './auth';
 
 // ---------------------------------------------------------------------------
@@ -65,11 +66,13 @@ export type AccountRole = 'owner' | 'editor' | 'viewer';
 export type AccountIdSource =
   | { from: 'param'; name?: string }
   | { from: 'body'; name?: string }
+  | { from: 'query'; name?: string }
   | { from: 'lookup'; table: 'transaction' | 'statement' };
 
 export type AccountPermissionVariables = AuthVariables & {
   accountId: string;
   accountRole: AccountRole;
+  organizationId: string;
 };
 
 /**
@@ -108,8 +111,8 @@ export function requireAccountAccess(
       );
     }
 
-    const role = await resolveUserAccountRole(user.id, accountId);
-    if (!role) {
+    const access = await resolveUserAccountAccess(user.id, accountId);
+    if (!access) {
       return c.json(
         {
           error: {
@@ -123,7 +126,7 @@ export function requireAccountAccess(
 
     // Check minimum role level
     const roleLevel = { owner: 3, editor: 2, viewer: 1 } as const;
-    if (roleLevel[role] < roleLevel[minimumRole]) {
+    if (roleLevel[access.role] < roleLevel[minimumRole]) {
       return c.json(
         {
           error: {
@@ -136,7 +139,8 @@ export function requireAccountAccess(
     }
 
     c.set('accountId', accountId);
-    c.set('accountRole', role);
+    c.set('accountRole', access.role);
+    c.set('organizationId', access.organizationId);
 
     await next();
   });
@@ -156,8 +160,16 @@ async function resolveAccountId(c: Context, source: AccountIdSource): Promise<st
       return body[source.name ?? 'accountId'] ?? null;
     }
 
-    case 'lookup':
-      // TODO: Implement when transaction/statement tables exist.
+    case 'query':
+      return c.req.query(source.name ?? 'accountId') ?? null;
+
+    case 'lookup': {
+      if (source.table === 'transaction') {
+        const transactionId = c.req.param('id');
+        if (!transactionId) return null;
+        return getAccountIdForTransaction(transactionId);
+      }
       throw new Error(`Account ID lookup from "${source.table}" table is not yet implemented.`);
+    }
   }
 }
