@@ -4,6 +4,7 @@ export * from './receipt';
 export * from './recurring';
 export * from './sharing';
 export * from './statement';
+export * from './subscription';
 export * from './tag';
 export * from './transaction';
 export * from './user';

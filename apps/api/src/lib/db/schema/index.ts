@@ -5,6 +5,7 @@ export * from './notification';
 export * from './organization';
 export * from './recurring';
 export * from './relations';
+export * from './subscription';
 export * from './tag';
 export * from './team';
 export * from './transaction';

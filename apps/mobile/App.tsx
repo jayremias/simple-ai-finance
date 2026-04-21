@@ -4,7 +4,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TamaguiProvider } from 'tamagui';
 import { AppNavigator } from './src/navigation/AppNavigator';
+import { initializeRevenueCat } from './src/services/revenuecat';
 import { config } from './tamagui.config';
+
+initializeRevenueCat();
 
 const queryClient = new QueryClient();
 

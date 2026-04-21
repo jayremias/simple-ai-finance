@@ -9,6 +9,7 @@ export interface WeeklyData {
 export type RootStackParamList = {
   Login: undefined;
   MainTabs: undefined;
+  Paywall: undefined;
   ReceiptReview: { items: ParsedTransactionItem[]; sourceConfidence: number };
   WeeklyAnalysis: undefined;
   TransactionList:
