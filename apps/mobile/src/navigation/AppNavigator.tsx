@@ -3,7 +3,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { LoginScreen } from '../screens/LoginScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ReceiptReviewScreen } from '../screens/ReceiptReviewScreen';
+import { SharingScreen } from '../screens/SharingScreen';
 import { TransactionListScreen } from '../screens/TransactionListScreen';
 import { WeeklyAnalysisScreen } from '../screens/WeeklyAnalysisScreen';
 import { storage } from '../services/storage';
@@ -61,6 +63,8 @@ export function AppNavigator() {
         <Stack.Screen name="ReceiptReview" component={ReceiptReviewScreen} />
         <Stack.Screen name="WeeklyAnalysis" component={WeeklyAnalysisScreen} />
         <Stack.Screen name="TransactionList" component={TransactionListScreen} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
+        <Stack.Screen name="Sharing" component={SharingScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

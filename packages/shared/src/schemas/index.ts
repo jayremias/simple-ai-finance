@@ -1,5 +1,6 @@
 export * from './account';
 export * from './category';
+export * from './notifications';
 export * from './receipt';
 export * from './recurring';
 export * from './sharing';

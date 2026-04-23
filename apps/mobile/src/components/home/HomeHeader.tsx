@@ -6,9 +6,10 @@ import { Colors } from '@/theme/colors';
 interface HomeHeaderProps {
   userName: string;
   onNotification: () => void;
+  unreadCount?: number;
 }
 
-export function HomeHeader({ userName, onNotification }: HomeHeaderProps) {
+export function HomeHeader({ userName, onNotification, unreadCount = 0 }: HomeHeaderProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -24,6 +25,11 @@ export function HomeHeader({ userName, onNotification }: HomeHeaderProps) {
       </View>
       <TouchableOpacity style={styles.notificationBtn} onPress={onNotification}>
         <Ionicons name="notifications-outline" size={22} color={Colors.textPrimary} />
+        {unreadCount > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+          </View>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -68,5 +74,23 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceBg,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: Colors.textPrimary,
+    fontSize: 9,
+    fontWeight: '700',
+    lineHeight: 12,
   },
 });
