@@ -1,0 +1,35 @@
+/** @type {import('expo/config').ExpoConfig} */
+module.exports = {
+  name: 'MoneyLens',
+  slug: 'moneylens',
+  version: '0.0.1',
+  orientation: 'portrait',
+  icon: './assets/icon.png',
+  userInterfaceStyle: 'automatic',
+  splash: {
+    image: './assets/splash-icon.png',
+    resizeMode: 'contain',
+    backgroundColor: '#ffffff',
+  },
+  ios: {
+    supportsTablet: true,
+    bundleIdentifier: 'com.moneylens.app',
+  },
+  android: {
+    package: 'com.moneylens.app',
+    adaptiveIcon: {
+      backgroundColor: '#E6F4FE',
+      foregroundImage: './assets/android-icon-foreground.png',
+      backgroundImage: './assets/android-icon-background.png',
+      monochromeImage: './assets/android-icon-monochrome.png',
+    },
+  },
+  web: {
+    favicon: './assets/favicon.png',
+  },
+  plugins: ['@react-native-community/datetimepicker'],
+  extra: {
+    revenueCatApiKeyIos: process.env.REVENUECAT_API_KEY_IOS,
+    revenueCatApiKeyAndroid: process.env.REVENUECAT_API_KEY_ANDROID,
+  },
+};

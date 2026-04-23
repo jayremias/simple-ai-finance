@@ -14,11 +14,23 @@
  */
 
 import Stripe from 'stripe';
+import { z } from 'zod';
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? '';
-const RC_SECRET_API_KEY = process.env.REVENUECAT_SECRET_API_KEY ?? '';
-const RC_PROJECT_ID = process.env.REVENUECAT_PROJECT_ID ?? '';
-const RC_STRIPE_APP_ID = process.env.REVENUECAT_STRIPE_APP_ID ?? '';
+const envSchema = z.object({
+  STRIPE_SECRET_KEY: z.string().min(1),
+  REVENUECAT_SECRET_API_KEY: z.string().min(1),
+  REVENUECAT_PROJECT_ID: z.string().min(1),
+  REVENUECAT_STRIPE_APP_ID: z.string().min(1),
+});
+
+const env = envSchema.parse(process.env);
+
+const {
+  STRIPE_SECRET_KEY,
+  REVENUECAT_SECRET_API_KEY: RC_SECRET_API_KEY,
+  REVENUECAT_PROJECT_ID: RC_PROJECT_ID,
+  REVENUECAT_STRIPE_APP_ID: RC_STRIPE_APP_ID,
+} = env;
 
 // Known Stripe IDs
 const STRIPE_PRODUCT_ID = 'prod_UNVWOlkN4Fcgua';
@@ -26,20 +38,6 @@ const STRIPE_PRICE_MONTHLY = 'price_1TOkVaRIo9q2LYEhKvKjHCdN';
 const STRIPE_PRICE_ANNUAL = 'price_1TOkVaRIo9q2LYEhRJaZPywP';
 
 const RC_BASE = 'https://api.revenuecat.com/v2';
-
-function requireEnv() {
-  const missing = [
-    !STRIPE_SECRET_KEY && 'STRIPE_SECRET_KEY',
-    !RC_SECRET_API_KEY && 'REVENUECAT_SECRET_API_KEY',
-    !RC_PROJECT_ID && 'REVENUECAT_PROJECT_ID',
-    !RC_STRIPE_APP_ID && 'REVENUECAT_STRIPE_APP_ID',
-  ].filter(Boolean);
-
-  if (missing.length > 0) {
-    console.error('Missing required env vars:', missing.join(', '));
-    process.exit(1);
-  }
-}
 
 async function rcRequest(method: string, path: string, body?: unknown): Promise<unknown> {
   const response = await fetch(`${RC_BASE}${path}`, {
@@ -200,8 +198,6 @@ async function attachProductsToEntitlement(
 async function main() {
   console.log('MoneyLens billing setup');
   console.log('=======================');
-
-  requireEnv();
 
   await verifyStripe();
   const entitlementId = await createEntitlement();

@@ -46,7 +46,7 @@ webhooks.post('/webhooks/revenuecat', async (c) => {
   }
 
   const userId = event.app_user_id;
-  const expiresAt = event.expiration_at_ms ? new Date(event.expiration_at_ms) : null;
+  const expiresAt = event.expiration_at_ms ? new Date(event.expiration_at_ms) : undefined;
   const stripeCustomerId = event.subscriber_attributes?.$stripeCustomerId?.value ?? undefined;
 
   if (ACTIVE_EVENT_TYPES.has(event.type)) {
