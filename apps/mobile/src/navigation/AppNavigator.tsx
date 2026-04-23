@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { LoginScreen } from '../screens/LoginScreen';
+import { PaywallScreen } from '../screens/PaywallScreen';
 import { ReceiptReviewScreen } from '../screens/ReceiptReviewScreen';
 import { TransactionListScreen } from '../screens/TransactionListScreen';
 import { WeeklyAnalysisScreen } from '../screens/WeeklyAnalysisScreen';
@@ -58,6 +59,11 @@ export function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+        <Stack.Screen
+          name="Paywall"
+          component={PaywallScreen}
+          options={{ presentation: 'modal' }}
+        />
         <Stack.Screen name="ReceiptReview" component={ReceiptReviewScreen} />
         <Stack.Screen name="WeeklyAnalysis" component={WeeklyAnalysisScreen} />
         <Stack.Screen name="TransactionList" component={TransactionListScreen} />
