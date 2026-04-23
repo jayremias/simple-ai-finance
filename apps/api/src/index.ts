@@ -15,9 +15,11 @@ import receipts from '@/routes/receipts';
 import recurring from '@/routes/recurring';
 import sharing from '@/routes/sharing';
 import statements from '@/routes/statements';
+import subscriptions from '@/routes/subscriptions';
 import tags from '@/routes/tags';
 import transactions from '@/routes/transactions';
 import users from '@/routes/users';
+import webhooks from '@/routes/webhooks';
 
 const app = new Hono();
 
@@ -43,6 +45,10 @@ app.use('/api/auth/delete-user', sensitiveAuthLimiter);
 app.on(['POST', 'GET'], '/api/auth/*', (c) => auth.handler(c.req.raw));
 app.route('/', authRoutes);
 
+// --- Webhooks (no auth middleware) ---
+
+app.route('/', webhooks);
+
 // --- Business routes (/api/v1/*) ---
 
 const api = new Hono<{ Variables: AuthVariables }>().basePath('/api/v1');
@@ -58,6 +64,7 @@ api.route('/', notifications);
 api.route('/', receipts);
 api.route('/', sharing);
 api.route('/', statements);
+api.route('/', subscriptions);
 
 app.route('/', api);
 

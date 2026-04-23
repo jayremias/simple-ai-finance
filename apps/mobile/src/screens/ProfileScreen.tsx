@@ -1,14 +1,24 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { authService } from '@/services/auth';
+import { resetRevenueCatUser } from '@/services/revenuecat';
 import { storage } from '@/services/storage';
 import { useAuthStore } from '@/stores/auth';
 import { Colors } from '@/theme/colors';
+import type { RootStackParamList } from '@/types';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NavigationProp>();
   const { data: profile, isLoading, error } = useUserProfile();
+  const { data: subscription } = useSubscription();
   const { token, clearAuth } = useAuthStore();
 
   async function handleSignOut() {
@@ -20,6 +30,7 @@ export function ProfileScreen() {
       }
     }
     await storage.deleteToken();
+    await resetRevenueCatUser().catch(() => undefined);
     clearAuth();
   }
 
@@ -41,6 +52,24 @@ export function ProfileScreen() {
             <Row label="Currency" value={profile.defaultCurrency} />
             <Row label="Locale" value={profile.locale} />
           </View>
+
+          {subscription?.isActive ? (
+            <View style={styles.subscriptionCard}>
+              <View style={styles.subscriptionLeft}>
+                <Ionicons name="star" size={18} color={Colors.brandPurple} />
+                <Text style={styles.subscriptionLabel}>Premium</Text>
+              </View>
+              <Text style={styles.subscriptionActive}>Active</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.upgradeButton}
+              onPress={() => navigation.navigate('Paywall')}
+            >
+              <Ionicons name="star-outline" size={18} color={Colors.textPrimary} />
+              <Text style={styles.upgradeText}>Upgrade to Premium</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
             <Text style={styles.signOutText}>Sign Out</Text>
@@ -118,6 +147,48 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontSize: 14,
     fontWeight: '500',
+  },
+  subscriptionCard: {
+    width: '100%',
+    backgroundColor: `${Colors.brandPurple}15`,
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: `${Colors.brandPurple}40`,
+  },
+  subscriptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  subscriptionLabel: {
+    color: Colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  subscriptionActive: {
+    color: Colors.success,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  upgradeButton: {
+    width: '100%',
+    backgroundColor: Colors.brandPurple,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  upgradeText: {
+    color: Colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '700',
   },
   signOutButton: {
     marginTop: 16,
