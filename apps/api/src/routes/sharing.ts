@@ -4,12 +4,14 @@ import { z } from 'zod';
 import { requireAuth } from '@/middleware/auth';
 import type { OrgMembershipVariables } from '@/middleware/organization';
 import { requireActiveOrg, requireOrgMembership } from '@/middleware/organization';
+import { type AccountPermissionVariables, requireAccountAccess } from '@/middleware/permissions';
 import {
   AccountNotFoundError,
   AlreadyHasAccessError,
   acceptInvitation,
   InvitationNotFoundError,
   inviteUserToAccount,
+  listAccountMembers,
   MemberNotFoundError,
   revokeAccountAccess,
   SelfInviteError,
@@ -19,7 +21,7 @@ const revokeAccessSchema = z.object({
   userId: z.string().min(1),
 });
 
-const sharing = new Hono<{ Variables: OrgMembershipVariables }>()
+const sharing = new Hono<{ Variables: OrgMembershipVariables & AccountPermissionVariables }>()
   .basePath('/sharing')
   .use(requireAuth);
 
@@ -130,5 +132,19 @@ sharing.delete('/:accountId', requireActiveOrg, requireOrgMembership('owner'), a
     throw error;
   }
 });
+
+// GET /sharing/:accountId/members — List members with access to an account
+sharing.get(
+  '/:accountId/members',
+  requireAccountAccess('viewer', { from: 'param', name: 'accountId' }),
+  async (c) => {
+    const accountId = c.get('accountId');
+    const members = await listAccountMembers(accountId);
+    if (!members) {
+      return c.json({ error: { code: 'NOT_FOUND', message: 'Account not found' } }, 404);
+    }
+    return c.json({ data: members });
+  }
+);
 
 export default sharing;

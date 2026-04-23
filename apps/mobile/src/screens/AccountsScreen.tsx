@@ -1,5 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import type { AccountResponse } from '@moneylens/shared';
 import { ACCOUNT_TYPES, CURRENCIES } from '@moneylens/shared';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,6 +27,7 @@ import {
 } from '@/hooks/useAccounts';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { Colors } from '@/theme/colors';
+import type { RootStackParamList } from '@/types';
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   checking: 'Checking',
@@ -53,7 +57,15 @@ function formatBalance(cents: number, currency: string) {
 // Account card
 // ---------------------------------------------------------------------------
 
-function AccountCard({ account, onPress }: { account: AccountResponse; onPress: () => void }) {
+function AccountCard({
+  account,
+  onPress,
+  onShare,
+}: {
+  account: AccountResponse;
+  onPress: () => void;
+  onShare: () => void;
+}) {
   const dot = account.color ?? Colors.brandBlue;
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
@@ -66,6 +78,13 @@ function AccountCard({ account, onPress }: { account: AccountResponse; onPress: 
         <Text style={styles.cardBalance}>{formatBalance(account.balance, account.currency)}</Text>
         <Text style={styles.cardCurrency}>{account.currency}</Text>
       </View>
+      <TouchableOpacity
+        onPress={onShare}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        style={styles.shareIcon}
+      >
+        <Ionicons name="people-outline" size={18} color={Colors.textMuted} />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -326,8 +345,11 @@ function AccountFormSheet({
 // Screen
 // ---------------------------------------------------------------------------
 
+type AccountsNavProp = NativeStackNavigationProp<RootStackParamList>;
+
 export function AccountsScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<AccountsNavProp>();
   const { data: accounts, isLoading, error, refetch } = useAccounts();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<AccountResponse | null>(null);
@@ -366,7 +388,15 @@ export function AccountsScreen() {
         <FlatList
           data={accounts}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <AccountCard account={item} onPress={() => openEdit(item)} />}
+          renderItem={({ item }) => (
+            <AccountCard
+              account={item}
+              onPress={() => openEdit(item)}
+              onShare={() =>
+                navigation.navigate('Sharing', { accountId: item.id, accountName: item.name })
+              }
+            />
+          )}
           contentContainerStyle={styles.list}
           refreshControl={
             <RefreshControl
@@ -474,6 +504,9 @@ const styles = StyleSheet.create({
   cardCurrency: {
     color: Colors.textMuted,
     fontSize: 11,
+  },
+  shareIcon: {
+    padding: 4,
   },
   emptyState: {
     alignItems: 'center',

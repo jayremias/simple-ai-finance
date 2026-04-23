@@ -8,6 +8,29 @@ import { teamMember } from '@/lib/db/schema/team';
 import { getAccountById } from '@/services/accounts.service';
 import { createNotification } from '@/services/notifications.service';
 
+export async function listAccountMembers(accountId: string) {
+  const account = await getAccountById(accountId);
+  if (!account) return null;
+
+  const rows = await db
+    .select({
+      userId: teamMember.userId,
+      name: user.name,
+      email: user.email,
+      role: teamMember.role,
+    })
+    .from(teamMember)
+    .innerJoin(user, eq(teamMember.userId, user.id))
+    .where(eq(teamMember.teamId, account.teamId));
+
+  return rows.map((row) => ({
+    userId: row.userId,
+    name: row.name,
+    email: row.email,
+    role: row.role as 'owner' | 'editor' | 'viewer',
+  }));
+}
+
 /**
  * Create an invitation for a user to access a specific financial account.
  * Uses Better Auth's createInvitation API under the hood.

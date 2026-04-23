@@ -29,6 +29,7 @@ import { FeedAISection } from '../components/home/FeedAISection';
 import { HomeHeader } from '../components/home/HomeHeader';
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
+import { useNotifications } from '../hooks/useNotifications';
 import { useCreateTag, useTags } from '../hooks/useTags';
 import { useCreateTransaction, useTransactions } from '../hooks/useTransactions';
 import { useUserProfile } from '../hooks/useUserProfile';
@@ -334,6 +335,7 @@ export function HomeScreen() {
   const { data: profile, refetch: refetchProfile } = useUserProfile();
   const { data: accountsData, refetch: refetchAccounts } = useAccounts();
   const { data: transactionsData, refetch: refetchTransactions } = useTransactions({ limit: 10 });
+  const { data: notificationsData } = useNotifications();
   const [formVisible, setFormVisible] = useState(false);
   const [editTransaction, setEditTransaction] = useState<TransactionResponse | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -348,6 +350,7 @@ export function HomeScreen() {
   const totalBalanceCents = accounts.reduce((sum, a) => sum + a.balance, 0);
   const totalBalance = totalBalanceCents / 100;
   const firstName = profile?.name?.split(' ')[0] ?? '';
+  const unreadCount = (notificationsData?.data ?? []).filter((n) => n.status === 'unread').length;
   const transactions = transactionsData?.data ?? [];
 
   const handleScanReceipt = () => {
@@ -383,7 +386,8 @@ export function HomeScreen() {
       >
         <HomeHeader
           userName={firstName}
-          onNotification={() => Alert.alert('Notifications', 'No new notifications')}
+          onNotification={() => navigation.navigate('Notifications')}
+          unreadCount={unreadCount}
         />
 
         <BalanceCard balance={totalBalance} />

@@ -140,6 +140,7 @@ moneylens/
 - **Imports**: Use `@/` path alias where configured.
 - **Date Handling**: Use `date-fns` via a centralized date helper. Never use raw `Date` for formatting.
 - **Environment Variables**: Validate with Zod at startup — never read `process.env` directly.
+- **No hardcoded secrets in mobile**: API keys, tokens, and secrets must never be hardcoded in mobile source files. Use Expo's `app.config.js` `extra` field + `expo-constants` to inject at build time, and keep keys out of source control.
 
 ## Validation (Zod)
 
