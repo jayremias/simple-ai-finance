@@ -4,6 +4,7 @@ import {
   updateAccountSchema,
 } from '@moneylens/shared/schemas';
 import { Hono } from 'hono';
+import { StatusCodes } from 'http-status-codes';
 import { requireAuth } from '@/middleware/auth';
 import { requireActiveOrg, requireOrgMembership } from '@/middleware/organization';
 import type { AccountPermissionVariables } from '@/middleware/permissions';
@@ -16,15 +17,16 @@ import {
   updateAccount,
 } from '@/services/accounts.service';
 
-const accounts = new Hono<{ Variables: AccountPermissionVariables }>()
-  .basePath('/accounts')
-  .use(requireAuth);
+const accounts = new Hono<{ Variables: AccountPermissionVariables }>().use(requireAuth);
 
 // POST /accounts — Create account in user's active org
 accounts.post('/', requireActiveOrg, requireOrgMembership('editor'), async (c) => {
   const user = c.get('user');
   if (!user) {
-    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
+    return c.json(
+      { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
+      StatusCodes.UNAUTHORIZED
+    );
   }
   const organizationId = c.get('organizationId') as string;
 
@@ -39,12 +41,12 @@ accounts.post('/', requireActiveOrg, requireOrgMembership('editor'), async (c) =
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 
   const account = await createAccount(user.id, organizationId, parsed.data);
-  return c.json(account, 201);
+  return c.json(account, StatusCodes.CREATED);
 });
 
 // GET /accounts — List accounts in user's active org
@@ -61,7 +63,7 @@ accounts.get('/', requireActiveOrg, requireOrgMembership(), async (c) => {
           details: query.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 
@@ -92,7 +94,7 @@ accounts.patch('/:id', requireAccountAccess('editor'), async (c) => {
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 
@@ -105,13 +107,16 @@ accounts.patch('/:id', requireAccountAccess('editor'), async (c) => {
           message: 'Only owners can archive accounts',
         },
       },
-      403
+      StatusCodes.FORBIDDEN
     );
   }
 
   const updated = await updateAccount(accountId, parsed.data);
   if (!updated) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Account not found' } }, 404);
+    return c.json(
+      { error: { code: 'NOT_FOUND', message: 'Account not found' } },
+      StatusCodes.NOT_FOUND
+    );
   }
 
   return c.json(updated);
@@ -123,7 +128,10 @@ accounts.delete('/:id', requireAccountAccess('owner'), async (c) => {
 
   const deleted = await deleteAccount(accountId);
   if (!deleted) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Account not found' } }, 404);
+    return c.json(
+      { error: { code: 'NOT_FOUND', message: 'Account not found' } },
+      StatusCodes.NOT_FOUND
+    );
   }
 
   return c.json({ success: true });

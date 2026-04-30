@@ -1,5 +1,6 @@
 import { createCategorySchema, updateCategorySchema } from '@moneylens/shared';
 import { Hono } from 'hono';
+import { StatusCodes } from 'http-status-codes';
 import { requireAuth } from '@/middleware/auth';
 import {
   type OrgMembershipVariables,
@@ -14,7 +15,6 @@ import {
 } from '@/services/categories.service';
 
 const categories = new Hono<{ Variables: OrgMembershipVariables }>()
-  .basePath('/categories')
   .use(requireAuth)
   .use(requireActiveOrg)
   .use(requireOrgMembership());
@@ -41,7 +41,7 @@ categories.post('/', async (c) => {
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 
@@ -52,7 +52,7 @@ categories.post('/', async (c) => {
       createdAt: created.createdAt.toISOString(),
       updatedAt: created.updatedAt.toISOString(),
     },
-    201
+    StatusCodes.CREATED
   );
 });
 
@@ -72,13 +72,16 @@ categories.patch('/:id', async (c) => {
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 
   const updated = await updateCategory(id, organizationId, parsed.data);
   if (!updated) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Category not found' } }, 404);
+    return c.json(
+      { error: { code: 'NOT_FOUND', message: 'Category not found' } },
+      StatusCodes.NOT_FOUND
+    );
   }
 
   return c.json({
@@ -95,7 +98,10 @@ categories.delete('/:id', async (c) => {
 
   const deleted = await deleteCategory(id, organizationId);
   if (!deleted) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Category not found' } }, 404);
+    return c.json(
+      { error: { code: 'NOT_FOUND', message: 'Category not found' } },
+      StatusCodes.NOT_FOUND
+    );
   }
 
   return c.json({ success: true });

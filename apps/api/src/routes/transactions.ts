@@ -5,6 +5,7 @@ import {
 } from '@moneylens/shared';
 import { and, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
+import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { member } from '@/lib/db/schema/organization';
@@ -31,15 +32,16 @@ const payeeQuerySchema = z.object({
 
 const transactions = new Hono<{
   Variables: OrgMembershipVariables & AccountPermissionVariables;
-}>()
-  .basePath('/transactions')
-  .use(requireAuth);
+}>().use(requireAuth);
 
 // GET /transactions — dual path: account-scoped (with accountId) or org-scoped (without)
 transactions.get('/', async (c) => {
   const user = c.get('user');
   if (!user) {
-    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
+    return c.json(
+      { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
+      StatusCodes.UNAUTHORIZED
+    );
   }
 
   const parsed = listTransactionsSchema.safeParse(c.req.query());
@@ -52,7 +54,7 @@ transactions.get('/', async (c) => {
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 
@@ -62,7 +64,10 @@ transactions.get('/', async (c) => {
     // Account-scoped: shared users can list via team membership
     const access = await resolveUserAccountAccess(user.id, parsed.data.accountId);
     if (!access) {
-      return c.json({ error: { code: 'FORBIDDEN', message: 'No access to this account' } }, 403);
+      return c.json(
+        { error: { code: 'FORBIDDEN', message: 'No access to this account' } },
+        StatusCodes.FORBIDDEN
+      );
     }
     organizationId = access.organizationId;
   } else {
@@ -76,7 +81,7 @@ transactions.get('/', async (c) => {
             message: 'No active organization. Set an active organization first.',
           },
         },
-        400
+        StatusCodes.BAD_REQUEST
       );
     }
     const [orgMember] = await db
@@ -87,7 +92,7 @@ transactions.get('/', async (c) => {
     if (!orgMember) {
       return c.json(
         { error: { code: 'FORBIDDEN', message: 'Not a member of this organization' } },
-        403
+        StatusCodes.FORBIDDEN
       );
     }
     organizationId = activeOrgId;
@@ -111,7 +116,7 @@ transactions.get('/payees', requireActiveOrg, requireOrgMembership(), async (c) 
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 
@@ -128,7 +133,10 @@ transactions.get(
 
     const tx = await getTransactionById(c.req.param('id'), organizationId);
     if (!tx) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Transaction not found' } }, 404);
+      return c.json(
+        { error: { code: 'NOT_FOUND', message: 'Transaction not found' } },
+        StatusCodes.NOT_FOUND
+      );
     }
     return c.json(tx);
   }
@@ -152,16 +160,19 @@ transactions.post(
             details: parsed.error.flatten(),
           },
         },
-        400
+        StatusCodes.BAD_REQUEST
       );
     }
 
     const user = c.get('user');
     if (!user) {
-      return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
+      return c.json(
+        { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
+        StatusCodes.UNAUTHORIZED
+      );
     }
     const tx = await createTransaction(organizationId, user.id, parsed.data);
-    return c.json(tx, 201);
+    return c.json(tx, StatusCodes.CREATED);
   }
 );
 
@@ -183,13 +194,16 @@ transactions.patch(
             details: parsed.error.flatten(),
           },
         },
-        400
+        StatusCodes.BAD_REQUEST
       );
     }
 
     const updated = await updateTransaction(c.req.param('id'), organizationId, parsed.data);
     if (!updated) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Transaction not found' } }, 404);
+      return c.json(
+        { error: { code: 'NOT_FOUND', message: 'Transaction not found' } },
+        StatusCodes.NOT_FOUND
+      );
     }
     return c.json(updated);
   }
@@ -204,7 +218,10 @@ transactions.delete(
 
     const deleted = await deleteTransaction(c.req.param('id'), organizationId);
     if (!deleted) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Transaction not found' } }, 404);
+      return c.json(
+        { error: { code: 'NOT_FOUND', message: 'Transaction not found' } },
+        StatusCodes.NOT_FOUND
+      );
     }
     return c.json({ success: true });
   }

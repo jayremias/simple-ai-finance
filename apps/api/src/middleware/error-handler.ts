@@ -1,5 +1,6 @@
 import type { Context, ErrorHandler, NotFoundHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
+import { StatusCodes } from 'http-status-codes';
 import { ZodError } from 'zod';
 import { env } from '@/env';
 import { AppError } from '@/lib/errors';
@@ -31,7 +32,7 @@ function buildErrorResponse(
     },
   };
 
-  return c.json(body, status as 400);
+  return c.json(body, status as StatusCodes.BAD_REQUEST);
 }
 
 export const onError: ErrorHandler = (err, c) => {
@@ -49,7 +50,7 @@ export const onError: ErrorHandler = (err, c) => {
   }
 
   if (err instanceof ZodError) {
-    return buildErrorResponse(c, 400, 'VALIDATION_ERROR', 'Validation failed', {
+    return buildErrorResponse(c, StatusCodes.BAD_REQUEST, 'VALIDATION_ERROR', 'Validation failed', {
       issues: err.issues.map((issue) => ({
         path: issue.path.join('.'),
         message: issue.message,
@@ -65,24 +66,29 @@ export const onError: ErrorHandler = (err, c) => {
       ? 'Internal server error'
       : err.message || 'Internal server error';
 
-  return buildErrorResponse(c, 500, 'INTERNAL_ERROR', message);
+  return buildErrorResponse(c, StatusCodes.INTERNAL_SERVER_ERROR, 'INTERNAL_ERROR', message);
 };
 
 export const notFound: NotFoundHandler = (c) => {
-  return buildErrorResponse(c, 404, 'NOT_FOUND', `Route ${c.req.method} ${c.req.path} not found`);
+  return buildErrorResponse(
+    c,
+    StatusCodes.NOT_FOUND,
+    'NOT_FOUND',
+    `Route ${c.req.method} ${c.req.path} not found`
+  );
 };
 
 function httpStatusToCode(status: number): string {
   const codes: Record<number, string> = {
-    400: 'BAD_REQUEST',
-    401: 'UNAUTHORIZED',
-    403: 'FORBIDDEN',
-    404: 'NOT_FOUND',
-    405: 'METHOD_NOT_ALLOWED',
-    408: 'REQUEST_TIMEOUT',
-    409: 'CONFLICT',
-    422: 'UNPROCESSABLE_ENTITY',
-    429: 'RATE_LIMIT_EXCEEDED',
+    [StatusCodes.BAD_REQUEST]: 'BAD_REQUEST',
+    [StatusCodes.UNAUTHORIZED]: 'UNAUTHORIZED',
+    [StatusCodes.FORBIDDEN]: 'FORBIDDEN',
+    [StatusCodes.NOT_FOUND]: 'NOT_FOUND',
+    [StatusCodes.METHOD_NOT_ALLOWED]: 'METHOD_NOT_ALLOWED',
+    [StatusCodes.REQUEST_TIMEOUT]: 'REQUEST_TIMEOUT',
+    [StatusCodes.CONFLICT]: 'CONFLICT',
+    [StatusCodes.UNPROCESSABLE_ENTITY]: 'UNPROCESSABLE_ENTITY',
+    [StatusCodes.TOO_MANY_REQUESTS]: 'RATE_LIMIT_EXCEEDED',
   };
   return codes[status] ?? 'INTERNAL_ERROR';
 }

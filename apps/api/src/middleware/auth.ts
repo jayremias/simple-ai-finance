@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { createMiddleware } from 'hono/factory';
+import { StatusCodes } from 'http-status-codes';
 import { auth, type Session } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { member } from '@/lib/db/schema/organization';
@@ -58,7 +59,7 @@ export const requireAuth = createMiddleware<{
           message: 'Authentication required',
         },
       },
-      401
+      StatusCodes.UNAUTHORIZED
     );
   }
 

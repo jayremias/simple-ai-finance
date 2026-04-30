@@ -1,5 +1,6 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { S3Error } from '../errors/S3Error';
 import { env } from './env';
 
 const s3 = new S3Client({
@@ -31,7 +32,7 @@ export async function getObject(key: string): Promise<Buffer> {
   });
   const response = await s3.send(command);
   if (!response.Body) {
-    throw new Error(`S3 object not found: ${key}`);
+    throw new S3Error('OBJECT_NOT_FOUND', `S3 object not found: ${key}`);
   }
   const bytes = await response.Body.transformToByteArray();
   return Buffer.from(bytes);

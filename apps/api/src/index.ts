@@ -27,11 +27,10 @@ app.onError(onError);
 app.notFound(notFound);
 
 // --- Auth routes (/api/auth/**) ---
-
 app.use(
   '/api/auth/*',
   cors({
-    origin: env.CORS_ORIGINS === '*' ? '*' : env.CORS_ORIGINS.split(',').map((o) => o.trim()),
+    origin: env.getCorsOrigins(),
     allowMethods: ['GET', 'POST', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
     maxAge: 600,
@@ -51,7 +50,8 @@ app.route('/', webhooks);
 
 // --- Business routes (/api/v1/*) ---
 
-const api = new Hono<{ Variables: AuthVariables }>().basePath('/api/v1');
+// --- Business routes (/api/v1/*) ---
+const api = new Hono<{ Variables: AuthVariables }>().basePath('/v1');
 setupMiddleware(api);
 api.route('/', health);
 api.route('/users', users);
@@ -66,14 +66,25 @@ api.route('/', sharing);
 api.route('/', statements);
 api.route('/', subscriptions);
 
-app.route('/', api);
+api.route('/accounts', accounts);
+api.route('/categories', categories);
+api.route('/tags', tags);
+api.route('/transactions', transactions);
+api.route('/recurring', recurring);
+api.route('/notifications', notifications);
+api.route('/receipts', receipts);
+api.route('/sharing', sharing);
+api.route('/statements', statements);
+
+app.route('/api', api);
 
 export { app };
 
-if (process.env.NODE_ENV !== 'test') {
+if (!env.test) {
   console.log(`MoneyLens API running on port ${env.PORT}`);
 }
 
+// why exporting as default?
 export default {
   port: env.PORT,
   fetch: app.fetch,

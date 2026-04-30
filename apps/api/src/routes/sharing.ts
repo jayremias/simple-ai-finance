@@ -1,5 +1,6 @@
 import { inviteToAccountSchema } from '@moneylens/shared/schemas';
 import { Hono } from 'hono';
+import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 import { requireAuth } from '@/middleware/auth';
 import type { OrgMembershipVariables } from '@/middleware/organization';
@@ -21,16 +22,19 @@ const revokeAccessSchema = z.object({
   userId: z.string().min(1),
 });
 
-const sharing = new Hono<{ Variables: OrgMembershipVariables & AccountPermissionVariables }>()
-  .basePath('/sharing')
-  .use(requireAuth);
+const sharing = new Hono<{ Variables: OrgMembershipVariables & AccountPermissionVariables }>().use(
+  requireAuth
+);
 
 // POST /sharing/invite — Invite a user to a specific account
 sharing.post('/invite', requireActiveOrg, requireOrgMembership('owner'), async (c) => {
   const organizationId = c.get('organizationId') as string;
   const inviter = c.get('user');
   if (!inviter) {
-    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
+    return c.json(
+      { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
+      StatusCodes.UNAUTHORIZED
+    );
   }
 
   const body = await c.req.json();
@@ -44,7 +48,7 @@ sharing.post('/invite', requireActiveOrg, requireOrgMembership('owner'), async (
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 
@@ -58,18 +62,24 @@ sharing.post('/invite', requireActiveOrg, requireOrgMembership('owner'), async (
       c.req.raw.headers
     );
 
-    return c.json(result, 201);
+    return c.json(result, StatusCodes.CREATED);
   } catch (error) {
     if (error instanceof AccountNotFoundError) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Account not found' } }, 404);
+      return c.json(
+        { error: { code: 'NOT_FOUND', message: 'Account not found' } },
+        StatusCodes.NOT_FOUND
+      );
     }
     if (error instanceof SelfInviteError) {
-      return c.json({ error: { code: 'BAD_REQUEST', message: 'Cannot invite yourself' } }, 400);
+      return c.json(
+        { error: { code: 'BAD_REQUEST', message: 'Cannot invite yourself' } },
+        StatusCodes.BAD_REQUEST
+      );
     }
     if (error instanceof AlreadyHasAccessError) {
       return c.json(
         { error: { code: 'CONFLICT', message: 'User already has access to this account' } },
-        409
+        StatusCodes.CONFLICT
       );
     }
     throw error;
@@ -80,7 +90,10 @@ sharing.post('/invite', requireActiveOrg, requireOrgMembership('owner'), async (
 sharing.post('/invitations/:id/accept', async (c) => {
   const user = c.get('user');
   if (!user) {
-    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
+    return c.json(
+      { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
+      StatusCodes.UNAUTHORIZED
+    );
   }
 
   const invitationId = c.req.param('id');
@@ -90,7 +103,10 @@ sharing.post('/invitations/:id/accept', async (c) => {
     return c.json(result);
   } catch (error) {
     if (error instanceof InvitationNotFoundError) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Invitation not found' } }, 404);
+      return c.json(
+        { error: { code: 'NOT_FOUND', message: 'Invitation not found' } },
+        StatusCodes.NOT_FOUND
+      );
     }
     throw error;
   }
@@ -112,7 +128,7 @@ sharing.delete('/:accountId', requireActiveOrg, requireOrgMembership('owner'), a
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 
@@ -121,12 +137,15 @@ sharing.delete('/:accountId', requireActiveOrg, requireOrgMembership('owner'), a
     return c.json(result);
   } catch (error) {
     if (error instanceof AccountNotFoundError) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Account not found' } }, 404);
+      return c.json(
+        { error: { code: 'NOT_FOUND', message: 'Account not found' } },
+        StatusCodes.NOT_FOUND
+      );
     }
     if (error instanceof MemberNotFoundError) {
       return c.json(
         { error: { code: 'NOT_FOUND', message: 'User is not a member of this account' } },
-        404
+        StatusCodes.NOT_FOUND
       );
     }
     throw error;
@@ -141,7 +160,10 @@ sharing.get(
     const accountId = c.get('accountId');
     const members = await listAccountMembers(accountId);
     if (!members) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Account not found' } }, 404);
+      return c.json(
+        { error: { code: 'NOT_FOUND', message: 'Account not found' } },
+        StatusCodes.NOT_FOUND
+      );
     }
     return c.json({ data: members });
   }

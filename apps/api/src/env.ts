@@ -8,9 +8,21 @@ const envSchema = z.object({
   REVENUECAT_WEBHOOK_SECRET: z.string().default(''),
 });
 
-export const env = envSchema.parse(process.env);
+const parsedEnv = envSchema.parse(process.env);
 
-if (env.NODE_ENV === 'production' && env.CORS_ORIGINS === '*') {
+export const env = {
+  ...parsedEnv,
+  production: parsedEnv.NODE_ENV === 'production',
+  test: parsedEnv.NODE_ENV === 'test',
+  getCorsOrigins: () =>
+    parsedEnv.CORS_ORIGINS === '*'
+      ? '*'
+      : parsedEnv.CORS_ORIGINS.split(',')
+          .map((origin) => origin.trim())
+          .filter(Boolean),
+};
+
+if (env.production && env.CORS_ORIGINS === '*') {
   console.warn(
     "[security] CORS_ORIGINS is set to '*' in production — restrict to specific origins"
   );
