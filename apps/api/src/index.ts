@@ -1,3 +1,4 @@
+import { MINUTE_IN_SECONDS } from '@moneylens/shared';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { env } from '@/env';
@@ -7,7 +8,6 @@ import type { AuthVariables } from '@/middleware/auth';
 import { notFound, onError } from '@/middleware/error-handler';
 import { authLimiter, sensitiveAuthLimiter } from '@/middleware/rate-limiter';
 import accounts from '@/routes/accounts';
-import authRoutes from '@/routes/auth';
 import categories from '@/routes/categories';
 import health from '@/routes/health';
 import notifications from '@/routes/notifications';
@@ -33,7 +33,7 @@ app.use(
     origin: env.getCorsOrigins(),
     allowMethods: ['GET', 'POST', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
-    maxAge: 600,
+    maxAge: 10 * MINUTE_IN_SECONDS,
     credentials: true,
   })
 );
@@ -42,7 +42,6 @@ app.use('/api/auth/forget-password', sensitiveAuthLimiter);
 app.use('/api/auth/reset-password', sensitiveAuthLimiter);
 app.use('/api/auth/delete-user', sensitiveAuthLimiter);
 app.on(['POST', 'GET'], '/api/auth/*', (c) => auth.handler(c.req.raw));
-app.route('/', authRoutes);
 
 // --- Webhooks (no auth middleware) ---
 

@@ -1,4 +1,9 @@
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
+import {
+  MONTH_IN_MILISECONDS,
+  SECOND_IN_MILISECONDS,
+  WEEK_IN_MILISECONDS,
+} from '@moneylens/shared';
 import { eq } from 'drizzle-orm';
 import { app } from '@/index';
 import { db } from '@/lib/db';
@@ -56,7 +61,7 @@ describe('GET /api/v1/subscription', () => {
       isActive: true,
       productId: 'moneylens_premium_monthly',
       periodType: 'NORMAL',
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + MONTH_IN_MILISECONDS),
     });
 
     const res = await app.request('/api/v1/subscription', {
@@ -84,7 +89,7 @@ describe('POST /webhooks/revenuecat', () => {
         product_id: 'moneylens_premium_monthly',
         entitlement_id: 'premium',
         period_type: 'NORMAL',
-        expiration_at_ms: Date.now() + 30 * 24 * 60 * 60 * 1000,
+        expiration_at_ms: Date.now() + MONTH_IN_MILISECONDS,
         ...extra,
       },
       api_version: '1.0',
@@ -137,7 +142,7 @@ describe('POST /webhooks/revenuecat', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(
-        makeEvent('EXPIRATION', user.id, { expiration_at_ms: Date.now() - 1000 })
+        makeEvent('EXPIRATION', user.id, { expiration_at_ms: Date.now() - SECOND_IN_MILISECONDS })
       ),
     });
 
@@ -154,7 +159,7 @@ describe('POST /webhooks/revenuecat', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(
         makeEvent('CANCELLATION', user.id, {
-          expiration_at_ms: Date.now() + 7 * 24 * 60 * 60 * 1000,
+          expiration_at_ms: Date.now() + WEEK_IN_MILISECONDS,
         })
       ),
     });
@@ -172,7 +177,7 @@ describe('POST /webhooks/revenuecat', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(
         makeEvent('CANCELLATION', user.id, {
-          expiration_at_ms: Date.now() - 1000,
+          expiration_at_ms: Date.now() - SECOND_IN_MILISECONDS,
         })
       ),
     });
