@@ -270,43 +270,49 @@ export async function generateDueTransactions(asOfDate?: string): Promise<number
   let created = 0;
 
   for (const rule of rules) {
+    const occurrences: string[] = [];
     let currentDueDate = rule.nextDueDate;
+    let nextDate = currentDueDate;
+    let stoppedByEndDate = false;
 
     while (currentDueDate <= today) {
-      // Create the transaction
-      await db.insert(transaction).values({
-        organizationId: rule.organizationId,
-        accountId: rule.accountId,
-        categoryId: rule.categoryId,
-        type: rule.type,
-        amount: toSignedAmount(rule.amount, rule.type as RecurringType),
-        date: currentDueDate,
-        payee: rule.payee,
-        notes: rule.notes,
-      });
+      occurrences.push(currentDueDate);
+      nextDate = calculateNextDueDate(currentDueDate, rule.frequency as Frequency);
 
-      created++;
-
-      // Calculate next occurrence
-      const nextDate = calculateNextDueDate(currentDueDate, rule.frequency as Frequency);
-
-      // Check if rule should be deactivated (endDate exceeded)
       if (rule.endDate && nextDate > rule.endDate) {
-        await db
-          .update(recurringRule)
-          .set({ nextDueDate: nextDate, isActive: false })
-          .where(eq(recurringRule.id, rule.id));
+        stoppedByEndDate = true;
         break;
       }
-
-      // Update nextDueDate
-      await db
-        .update(recurringRule)
-        .set({ nextDueDate: nextDate })
-        .where(eq(recurringRule.id, rule.id));
-
       currentDueDate = nextDate;
     }
+
+    if (occurrences.length === 0) continue;
+
+    const signedAmount = toSignedAmount(rule.amount, rule.type as RecurringType);
+
+    await db.transaction(async (tx) => {
+      await tx.insert(transaction).values(
+        occurrences.map((date) => ({
+          organizationId: rule.organizationId,
+          accountId: rule.accountId,
+          categoryId: rule.categoryId,
+          type: rule.type,
+          amount: signedAmount,
+          date,
+          payee: rule.payee,
+          notes: rule.notes,
+        }))
+      );
+
+      await tx
+        .update(recurringRule)
+        .set(
+          stoppedByEndDate ? { nextDueDate: nextDate, isActive: false } : { nextDueDate: nextDate }
+        )
+        .where(eq(recurringRule.id, rule.id));
+    });
+
+    created += occurrences.length;
   }
 
   return created;
