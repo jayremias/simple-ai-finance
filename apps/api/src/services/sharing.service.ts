@@ -6,11 +6,11 @@ import { notification } from '@/lib/db/schema/notification';
 import { invitation } from '@/lib/db/schema/organization';
 import { teamMember } from '@/lib/db/schema/team';
 import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
-import { getAccountById } from '@/services/accounts.service';
+import { getAccountMetadataById } from '@/services/accounts.service';
 import { createNotification } from '@/services/notifications.service';
 
 export async function listAccountMembers(accountId: string) {
-  const account = await getAccountById(accountId);
+  const account = await getAccountMetadataById(accountId);
   if (!account) return null;
 
   const rows = await db
@@ -45,7 +45,7 @@ export async function inviteUserToAccount(
   inviterId: string,
   requestHeaders: Headers
 ) {
-  const account = await getAccountById(accountId);
+  const account = await getAccountMetadataById(accountId);
   if (!account) {
     throw new AccountNotFoundError(accountId);
   }
@@ -170,7 +170,7 @@ export async function revokeAccountAccess(
   targetUserId: string,
   organizationId: string
 ) {
-  const account = await getAccountById(accountId);
+  const account = await getAccountMetadataById(accountId);
   if (!account) {
     throw new AccountNotFoundError(accountId);
   }

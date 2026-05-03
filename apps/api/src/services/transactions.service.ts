@@ -5,7 +5,7 @@ import type {
   TransactionType,
   UpdateTransactionInput,
 } from '@moneylens/shared';
-import { and, desc, eq, gte, ilike, isNotNull, lt, lte, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, ilike, inArray, isNotNull, lt, lte, or, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { tag } from '@/lib/db/schema/tag';
 import { team } from '@/lib/db/schema/team';
@@ -36,12 +36,7 @@ async function fetchTagsForTransactions(txIds: string[]): Promise<Map<string, Ta
     .select({ transactionId: transactionTag.transactionId, tag })
     .from(transactionTag)
     .innerJoin(tag, eq(transactionTag.tagId, tag.id))
-    .where(
-      sql`${transactionTag.transactionId} = ANY(ARRAY[${sql.join(
-        txIds.map((id) => sql`${id}`),
-        sql`, `
-      )}]::text[])`
-    );
+    .where(inArray(transactionTag.transactionId, txIds));
 
   const map = new Map<string, TagRow[]>();
   for (const row of rows) {

@@ -4,7 +4,7 @@ import type {
   ParsedTransactionItem,
   TransactionResponse,
 } from '@moneylens/shared';
-import { and, eq, gte, lte } from 'drizzle-orm';
+import { and, eq, gte, inArray, lte } from 'drizzle-orm';
 import { extractText } from '@/lib/ai/ocr';
 import { parseTransactionsFromText } from '@/lib/ai/parse';
 import { db } from '@/lib/db';
@@ -167,7 +167,7 @@ async function fetchExistingTransactions(
           })
           .from(transactionTag)
           .innerJoin(tag, eq(transactionTag.tagId, tag.id))
-          .where(and(...ids.map((id) => eq(transactionTag.transactionId, id))))
+          .where(inArray(transactionTag.transactionId, ids))
       : [];
 
   const tagMap = new Map<string, (typeof tagRows)[number][]>();

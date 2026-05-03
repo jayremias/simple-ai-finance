@@ -91,13 +91,28 @@ export async function listAccountsByOrg(organizationId: string, status?: string)
   return accounts.map((a) => withBalance(a, txSums));
 }
 
-export async function getAccountById(accountId: string) {
+export async function getAccountMetadataById(accountId: string) {
   const [account] = await db
     .select()
     .from(financialAccount)
     .where(eq(financialAccount.id, accountId))
     .limit(1);
 
+  return account ?? null;
+}
+
+export async function getAccountMetadataByTeamId(teamId: string) {
+  const [account] = await db
+    .select()
+    .from(financialAccount)
+    .where(eq(financialAccount.teamId, teamId))
+    .limit(1);
+
+  return account ?? null;
+}
+
+export async function getAccountById(accountId: string) {
+  const account = await getAccountMetadataById(accountId);
   if (!account) return null;
 
   const txSums = await fetchTxSums([account.teamId]);
@@ -105,12 +120,7 @@ export async function getAccountById(accountId: string) {
 }
 
 export async function getAccountByTeamId(teamId: string) {
-  const [account] = await db
-    .select()
-    .from(financialAccount)
-    .where(eq(financialAccount.teamId, teamId))
-    .limit(1);
-
+  const account = await getAccountMetadataByTeamId(teamId);
   if (!account) return null;
 
   const txSums = await fetchTxSums([account.teamId]);
@@ -179,7 +189,8 @@ export async function resolveUserAccountAccess(
   userId: string,
   accountId: string
 ): Promise<AccountAccess | null> {
-  const account = (await getAccountById(accountId)) ?? (await getAccountByTeamId(accountId));
+  const account =
+    (await getAccountMetadataById(accountId)) ?? (await getAccountMetadataByTeamId(accountId));
   if (!account) return null;
 
   // Check org membership (determines role for all accounts in the org)
