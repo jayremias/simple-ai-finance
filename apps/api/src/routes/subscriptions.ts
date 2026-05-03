@@ -4,7 +4,7 @@ import type { AuthVariables } from '@/middleware/auth';
 import { requireAuth } from '@/middleware/auth';
 import { createStripePortalSession, getSubscriptionStatus } from '@/services/subscription.service';
 
-const subscriptions = new Hono<{ Variables: AuthVariables }>().basePath('/subscription');
+const subscriptions = new Hono<{ Variables: AuthVariables }>();
 
 subscriptions.use(requireAuth);
 

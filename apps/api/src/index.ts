@@ -54,17 +54,6 @@ const api = new Hono<{ Variables: AuthVariables }>().basePath('/v1');
 setupMiddleware(api);
 api.route('/', health);
 api.route('/users', users);
-api.route('/', accounts);
-api.route('/', categories);
-api.route('/', tags);
-api.route('/', transactions);
-api.route('/', recurring);
-api.route('/', notifications);
-api.route('/', receipts);
-api.route('/', sharing);
-api.route('/', statements);
-api.route('/', subscriptions);
-
 api.route('/accounts', accounts);
 api.route('/categories', categories);
 api.route('/tags', tags);
@@ -74,6 +63,7 @@ api.route('/notifications', notifications);
 api.route('/receipts', receipts);
 api.route('/sharing', sharing);
 api.route('/statements', statements);
+api.route('/subscription', subscriptions);
 
 app.route('/api', api);
 
