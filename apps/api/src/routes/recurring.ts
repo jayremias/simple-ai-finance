@@ -4,12 +4,14 @@ import {
   updateRecurringRuleSchema,
 } from '@moneylens/shared';
 import { Hono } from 'hono';
+import { NotFoundError } from '@/lib/errors';
 import { requireAuth } from '@/middleware/auth';
 import {
   type OrgMembershipVariables,
   requireActiveOrg,
   requireOrgMembership,
 } from '@/middleware/organization';
+import { validate } from '@/middleware/validate';
 import {
   createRecurringRule,
   deleteRecurringRule,
@@ -27,47 +29,18 @@ const recurring = new Hono<{ Variables: OrgMembershipVariables }>()
   .use(requireOrgMembership());
 
 // POST /recurring
-recurring.post('/', async (c) => {
+recurring.post('/', validate('json', createRecurringRuleSchema), async (c) => {
   const organizationId = c.get('organizationId');
 
-  const body = await c.req.json();
-  const parsed = createRecurringRuleSchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request body',
-          details: parsed.error.flatten(),
-        },
-      },
-      400
-    );
-  }
-
-  const rule = await createRecurringRule(organizationId, parsed.data);
+  const rule = await createRecurringRule(organizationId, c.req.valid('json'));
   return c.json(rule, 201);
 });
 
 // GET /recurring
-recurring.get('/', async (c) => {
+recurring.get('/', validate('query', listRecurringRulesSchema), async (c) => {
   const organizationId = c.get('organizationId');
 
-  const parsed = listRecurringRulesSchema.safeParse(c.req.query());
-  if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid query params',
-          details: parsed.error.flatten(),
-        },
-      },
-      400
-    );
-  }
-
-  const result = await listRecurringRules(organizationId, parsed.data);
+  const result = await listRecurringRules(organizationId, c.req.valid('query'));
   return c.json(result);
 });
 
@@ -76,35 +49,16 @@ recurring.get('/:id', async (c) => {
   const organizationId = c.get('organizationId');
 
   const rule = await getRecurringRuleById(c.req.param('id'), organizationId);
-  if (!rule) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } }, 404);
-  }
+  if (!rule) throw new NotFoundError('Recurring rule not found');
   return c.json(rule);
 });
 
 // PATCH /recurring/:id
-recurring.patch('/:id', async (c) => {
+recurring.patch('/:id', validate('json', updateRecurringRuleSchema), async (c) => {
   const organizationId = c.get('organizationId');
 
-  const body = await c.req.json();
-  const parsed = updateRecurringRuleSchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request body',
-          details: parsed.error.flatten(),
-        },
-      },
-      400
-    );
-  }
-
-  const updated = await updateRecurringRule(c.req.param('id'), organizationId, parsed.data);
-  if (!updated) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } }, 404);
-  }
+  const updated = await updateRecurringRule(c.req.param('id'), organizationId, c.req.valid('json'));
+  if (!updated) throw new NotFoundError('Recurring rule not found');
   return c.json(updated);
 });
 
@@ -113,9 +67,7 @@ recurring.delete('/:id', async (c) => {
   const organizationId = c.get('organizationId');
 
   const deleted = await deleteRecurringRule(c.req.param('id'), organizationId);
-  if (!deleted) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } }, 404);
-  }
+  if (!deleted) throw new NotFoundError('Recurring rule not found');
   return c.json({ success: true });
 });
 
@@ -124,9 +76,7 @@ recurring.post('/:id/pause', async (c) => {
   const organizationId = c.get('organizationId');
 
   const paused = await pauseRecurringRule(c.req.param('id'), organizationId);
-  if (!paused) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } }, 404);
-  }
+  if (!paused) throw new NotFoundError('Recurring rule not found');
   return c.json(paused);
 });
 
@@ -135,9 +85,7 @@ recurring.post('/:id/resume', async (c) => {
   const organizationId = c.get('organizationId');
 
   const resumed = await resumeRecurringRule(c.req.param('id'), organizationId);
-  if (!resumed) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } }, 404);
-  }
+  if (!resumed) throw new NotFoundError('Recurring rule not found');
   return c.json(resumed);
 });
 

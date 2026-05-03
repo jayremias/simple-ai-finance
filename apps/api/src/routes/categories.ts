@@ -1,11 +1,13 @@
 import { createCategorySchema, updateCategorySchema } from '@moneylens/shared';
 import { Hono } from 'hono';
+import { NotFoundError } from '@/lib/errors';
 import { requireAuth } from '@/middleware/auth';
 import {
   type OrgMembershipVariables,
   requireActiveOrg,
   requireOrgMembership,
 } from '@/middleware/organization';
+import { validate } from '@/middleware/validate';
 import {
   createCategory,
   deleteCategory,
@@ -27,25 +29,11 @@ categories.get('/', async (c) => {
 });
 
 // POST /categories
-categories.post('/', async (c) => {
+categories.post('/', validate('json', createCategorySchema), async (c) => {
   const organizationId = c.get('organizationId');
+  const data = c.req.valid('json');
 
-  const body = await c.req.json();
-  const parsed = createCategorySchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request body',
-          details: parsed.error.flatten(),
-        },
-      },
-      400
-    );
-  }
-
-  const created = await createCategory(organizationId, parsed.data);
+  const created = await createCategory(organizationId, data);
   return c.json(
     {
       ...created,
@@ -57,28 +45,14 @@ categories.post('/', async (c) => {
 });
 
 // PATCH /categories/:id
-categories.patch('/:id', async (c) => {
+categories.patch('/:id', validate('json', updateCategorySchema), async (c) => {
   const organizationId = c.get('organizationId');
   const id = c.req.param('id');
+  const data = c.req.valid('json');
 
-  const body = await c.req.json();
-  const parsed = updateCategorySchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request body',
-          details: parsed.error.flatten(),
-        },
-      },
-      400
-    );
-  }
-
-  const updated = await updateCategory(id, organizationId, parsed.data);
+  const updated = await updateCategory(id, organizationId, data);
   if (!updated) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Category not found' } }, 404);
+    throw new NotFoundError('Category not found');
   }
 
   return c.json({
@@ -95,7 +69,7 @@ categories.delete('/:id', async (c) => {
 
   const deleted = await deleteCategory(id, organizationId);
   if (!deleted) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Category not found' } }, 404);
+    throw new NotFoundError('Category not found');
   }
 
   return c.json({ success: true });

@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import type { AuthVariables } from '@/middleware/auth';
 import { requireAuth } from '@/middleware/auth';
 import { requireActiveOrg, requireOrgMembership } from '@/middleware/organization';
+import { validate } from '@/middleware/validate';
 import { getStatementUploadUrl, importStatement } from '@/services/statement.service';
 
 const statements = new Hono<{ Variables: AuthVariables }>()
@@ -16,26 +17,18 @@ statements.post('/upload-url', async (c) => {
 });
 
 // POST /statements/import
-statements.post('/import', requireActiveOrg, requireOrgMembership(), async (c) => {
-  const organizationId = c.get('organizationId') as string;
+statements.post(
+  '/import',
+  requireActiveOrg,
+  requireOrgMembership(),
+  validate('json', importStatementSchema),
+  async (c) => {
+    const organizationId = c.get('organizationId') as string;
+    const { key, accountId } = c.req.valid('json');
 
-  const body = await c.req.json();
-  const parsed = importStatementSchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request body',
-          details: parsed.error.flatten(),
-        },
-      },
-      400
-    );
+    const result = await importStatement(key, accountId, organizationId);
+    return c.json(result);
   }
-
-  const result = await importStatement(parsed.data.key, parsed.data.accountId, organizationId);
-  return c.json(result);
-});
+);
 
 export default statements;

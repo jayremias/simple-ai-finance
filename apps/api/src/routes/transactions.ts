@@ -8,6 +8,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { member } from '@/lib/db/schema/organization';
+import { BadRequestError, ForbiddenError, NotFoundError, UnauthorizedError } from '@/lib/errors';
 import { requireAuth } from '@/middleware/auth';
 import {
   type OrgMembershipVariables,
@@ -15,6 +16,7 @@ import {
   requireOrgMembership,
 } from '@/middleware/organization';
 import { type AccountPermissionVariables, requireAccountAccess } from '@/middleware/permissions';
+import { validate } from '@/middleware/validate';
 import { resolveUserAccountAccess } from '@/services/accounts.service';
 import {
   createTransaction,
@@ -36,88 +38,51 @@ const transactions = new Hono<{
   .use(requireAuth);
 
 // GET /transactions — dual path: account-scoped (with accountId) or org-scoped (without)
-transactions.get('/', async (c) => {
+transactions.get('/', validate('query', listTransactionsSchema), async (c) => {
   const user = c.get('user');
-  if (!user) {
-    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
-  }
+  if (!user) throw new UnauthorizedError('Not authenticated');
 
-  const parsed = listTransactionsSchema.safeParse(c.req.query());
-  if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid query params',
-          details: parsed.error.flatten(),
-        },
-      },
-      400
-    );
-  }
-
+  const data = c.req.valid('query');
   let organizationId: string;
 
-  if (parsed.data.accountId) {
+  if (data.accountId) {
     // Account-scoped: shared users can list via team membership
-    const access = await resolveUserAccountAccess(user.id, parsed.data.accountId);
-    if (!access) {
-      return c.json({ error: { code: 'FORBIDDEN', message: 'No access to this account' } }, 403);
-    }
+    const access = await resolveUserAccountAccess(user.id, data.accountId);
+    if (!access) throw new ForbiddenError('No access to this account');
     organizationId = access.organizationId;
   } else {
     // Org-scoped: require active org + membership
     const activeOrgId = c.get('session')?.activeOrganizationId;
     if (!activeOrgId) {
-      return c.json(
-        {
-          error: {
-            code: 'BAD_REQUEST',
-            message: 'No active organization. Set an active organization first.',
-          },
-        },
-        400
-      );
+      throw new BadRequestError('No active organization. Set an active organization first.');
     }
     const [orgMember] = await db
       .select()
       .from(member)
       .where(and(eq(member.organizationId, activeOrgId), eq(member.userId, user.id)))
       .limit(1);
-    if (!orgMember) {
-      return c.json(
-        { error: { code: 'FORBIDDEN', message: 'Not a member of this organization' } },
-        403
-      );
-    }
+    if (!orgMember) throw new ForbiddenError('Not a member of this organization');
     organizationId = activeOrgId;
   }
 
-  const result = await listTransactions(organizationId, parsed.data);
+  const result = await listTransactions(organizationId, data);
   return c.json(result);
 });
 
 // GET /transactions/payees — org-scoped
-transactions.get('/payees', requireActiveOrg, requireOrgMembership(), async (c) => {
-  const organizationId = c.get('organizationId');
+transactions.get(
+  '/payees',
+  requireActiveOrg,
+  requireOrgMembership(),
+  validate('query', payeeQuerySchema),
+  async (c) => {
+    const organizationId = c.get('organizationId');
+    const { q } = c.req.valid('query');
 
-  const parsed = payeeQuerySchema.safeParse(c.req.query());
-  if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid query params',
-          details: parsed.error.flatten(),
-        },
-      },
-      400
-    );
+    const data = await listPayees(organizationId, q);
+    return c.json({ data });
   }
-
-  const data = await listPayees(organizationId, parsed.data.q);
-  return c.json({ data });
-});
+);
 
 // GET /transactions/:id — account-scoped (shared users can read via team access)
 transactions.get(
@@ -127,9 +92,7 @@ transactions.get(
     const organizationId = c.get('organizationId');
 
     const tx = await getTransactionById(c.req.param('id'), organizationId);
-    if (!tx) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Transaction not found' } }, 404);
-    }
+    if (!tx) throw new NotFoundError('Transaction not found');
     return c.json(tx);
   }
 );
@@ -138,29 +101,13 @@ transactions.get(
 transactions.post(
   '/',
   requireAccountAccess('editor', { from: 'body', name: 'accountId' }),
+  validate('json', createTransactionSchema),
   async (c) => {
     const organizationId = c.get('organizationId');
-
-    const body = await c.req.json();
-    const parsed = createTransactionSchema.safeParse(body);
-    if (!parsed.success) {
-      return c.json(
-        {
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid request body',
-            details: parsed.error.flatten(),
-          },
-        },
-        400
-      );
-    }
-
     const user = c.get('user');
-    if (!user) {
-      return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
-    }
-    const tx = await createTransaction(organizationId, user.id, parsed.data);
+    if (!user) throw new UnauthorizedError('Not authenticated');
+
+    const tx = await createTransaction(organizationId, user.id, c.req.valid('json'));
     return c.json(tx, 201);
   }
 );
@@ -169,28 +116,12 @@ transactions.post(
 transactions.patch(
   '/:id',
   requireAccountAccess('editor', { from: 'lookup', table: 'transaction' }),
+  validate('json', updateTransactionSchema),
   async (c) => {
     const organizationId = c.get('organizationId');
 
-    const body = await c.req.json();
-    const parsed = updateTransactionSchema.safeParse(body);
-    if (!parsed.success) {
-      return c.json(
-        {
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid request body',
-            details: parsed.error.flatten(),
-          },
-        },
-        400
-      );
-    }
-
-    const updated = await updateTransaction(c.req.param('id'), organizationId, parsed.data);
-    if (!updated) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Transaction not found' } }, 404);
-    }
+    const updated = await updateTransaction(c.req.param('id'), organizationId, c.req.valid('json'));
+    if (!updated) throw new NotFoundError('Transaction not found');
     return c.json(updated);
   }
 );
@@ -203,9 +134,7 @@ transactions.delete(
     const organizationId = c.get('organizationId');
 
     const deleted = await deleteTransaction(c.req.param('id'), organizationId);
-    if (!deleted) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Transaction not found' } }, 404);
-    }
+    if (!deleted) throw new NotFoundError('Transaction not found');
     return c.json({ success: true });
   }
 );

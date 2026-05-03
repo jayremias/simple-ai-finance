@@ -5,6 +5,7 @@ import { user } from '@/lib/db/schema/auth';
 import { notification } from '@/lib/db/schema/notification';
 import { invitation } from '@/lib/db/schema/organization';
 import { teamMember } from '@/lib/db/schema/team';
+import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
 import { getAccountById } from '@/services/accounts.service';
 import { createNotification } from '@/services/notifications.service';
 
@@ -217,37 +218,32 @@ export async function revokeAccountAccess(
   return { success: true };
 }
 
-export class AccountNotFoundError extends Error {
+export class AccountNotFoundError extends NotFoundError {
   constructor(accountId: string) {
     super(`Account ${accountId} not found`);
-    this.name = 'AccountNotFoundError';
   }
 }
 
-export class InvitationNotFoundError extends Error {
+export class InvitationNotFoundError extends NotFoundError {
   constructor(invitationId: string) {
     super(`Invitation ${invitationId} not found or already accepted`);
-    this.name = 'InvitationNotFoundError';
   }
 }
 
-export class SelfInviteError extends Error {
+export class SelfInviteError extends BadRequestError {
   constructor() {
     super('Cannot invite yourself');
-    this.name = 'SelfInviteError';
   }
 }
 
-export class AlreadyHasAccessError extends Error {
+export class AlreadyHasAccessError extends ConflictError {
   constructor(email: string) {
-    super(`User ${email} already has access to this account`);
-    this.name = 'AlreadyHasAccessError';
+    super('CONFLICT', `User ${email} already has access to this account`);
   }
 }
 
-export class MemberNotFoundError extends Error {
+export class MemberNotFoundError extends NotFoundError {
   constructor(userId: string) {
     super(`User ${userId} is not a member of this account`);
-    this.name = 'MemberNotFoundError';
   }
 }

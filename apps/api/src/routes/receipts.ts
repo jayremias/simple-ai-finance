@@ -2,6 +2,7 @@ import { extractReceiptSchema } from '@moneylens/shared';
 import { Hono } from 'hono';
 import type { AuthVariables } from '@/middleware/auth';
 import { requireAuth } from '@/middleware/auth';
+import { validate } from '@/middleware/validate';
 import { createUploadUrl, extractFromKey } from '@/services/receipt.service';
 
 const receipts = new Hono<{ Variables: AuthVariables }>().basePath('/receipts').use(requireAuth);
@@ -13,23 +14,9 @@ receipts.post('/upload-url', async (c) => {
 });
 
 // POST /receipts/extract
-receipts.post('/extract', async (c) => {
-  const body = await c.req.json();
-  const parsed = extractReceiptSchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request body',
-          details: parsed.error.flatten(),
-        },
-      },
-      400
-    );
-  }
-
-  const result = await extractFromKey(parsed.data.key);
+receipts.post('/extract', validate('json', extractReceiptSchema), async (c) => {
+  const { key } = c.req.valid('json');
+  const result = await extractFromKey(key);
   return c.json(result);
 });
 

@@ -1,20 +1,17 @@
 import { inviteToAccountSchema } from '@moneylens/shared/schemas';
 import { Hono } from 'hono';
 import { z } from 'zod';
+import { NotFoundError, UnauthorizedError } from '@/lib/errors';
 import { requireAuth } from '@/middleware/auth';
 import type { OrgMembershipVariables } from '@/middleware/organization';
 import { requireActiveOrg, requireOrgMembership } from '@/middleware/organization';
 import { type AccountPermissionVariables, requireAccountAccess } from '@/middleware/permissions';
+import { validate } from '@/middleware/validate';
 import {
-  AccountNotFoundError,
-  AlreadyHasAccessError,
   acceptInvitation,
-  InvitationNotFoundError,
   inviteUserToAccount,
   listAccountMembers,
-  MemberNotFoundError,
   revokeAccountAccess,
-  SelfInviteError,
 } from '@/services/sharing.service';
 
 const revokeAccessSchema = z.object({
@@ -26,112 +23,54 @@ const sharing = new Hono<{ Variables: OrgMembershipVariables & AccountPermission
   .use(requireAuth);
 
 // POST /sharing/invite — Invite a user to a specific account
-sharing.post('/invite', requireActiveOrg, requireOrgMembership('owner'), async (c) => {
-  const organizationId = c.get('organizationId') as string;
-  const inviter = c.get('user');
-  if (!inviter) {
-    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
-  }
+sharing.post(
+  '/invite',
+  requireActiveOrg,
+  requireOrgMembership('owner'),
+  validate('json', inviteToAccountSchema),
+  async (c) => {
+    const organizationId = c.get('organizationId') as string;
+    const inviter = c.get('user');
+    if (!inviter) throw new UnauthorizedError('Not authenticated');
 
-  const body = await c.req.json();
-  const parsed = inviteToAccountSchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request body',
-          details: parsed.error.flatten(),
-        },
-      },
-      400
-    );
-  }
-
-  try {
+    const { accountId, email, role } = c.req.valid('json');
     const result = await inviteUserToAccount(
       organizationId,
-      parsed.data.accountId,
-      parsed.data.email,
-      parsed.data.role,
+      accountId,
+      email,
+      role,
       inviter.id,
       c.req.raw.headers
     );
 
     return c.json(result, 201);
-  } catch (error) {
-    if (error instanceof AccountNotFoundError) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Account not found' } }, 404);
-    }
-    if (error instanceof SelfInviteError) {
-      return c.json({ error: { code: 'BAD_REQUEST', message: 'Cannot invite yourself' } }, 400);
-    }
-    if (error instanceof AlreadyHasAccessError) {
-      return c.json(
-        { error: { code: 'CONFLICT', message: 'User already has access to this account' } },
-        409
-      );
-    }
-    throw error;
   }
-});
+);
 
 // POST /sharing/invitations/:id/accept — Accept a pending invitation
 sharing.post('/invitations/:id/accept', async (c) => {
   const user = c.get('user');
-  if (!user) {
-    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
-  }
+  if (!user) throw new UnauthorizedError('Not authenticated');
 
-  const invitationId = c.req.param('id');
-
-  try {
-    const result = await acceptInvitation(invitationId, user.id);
-    return c.json(result);
-  } catch (error) {
-    if (error instanceof InvitationNotFoundError) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Invitation not found' } }, 404);
-    }
-    throw error;
-  }
+  const result = await acceptInvitation(c.req.param('id'), user.id);
+  return c.json(result);
 });
 
 // DELETE /sharing/:accountId — Revoke a user's access to an account
-sharing.delete('/:accountId', requireActiveOrg, requireOrgMembership('owner'), async (c) => {
-  const organizationId = c.get('organizationId') as string;
-  const accountId = c.req.param('accountId');
+sharing.delete(
+  '/:accountId',
+  requireActiveOrg,
+  requireOrgMembership('owner'),
+  validate('json', revokeAccessSchema),
+  async (c) => {
+    const organizationId = c.get('organizationId') as string;
+    const accountId = c.req.param('accountId');
+    const { userId } = c.req.valid('json');
 
-  const body = await c.req.json();
-  const parsed = revokeAccessSchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request body',
-          details: parsed.error.flatten(),
-        },
-      },
-      400
-    );
-  }
-
-  try {
-    const result = await revokeAccountAccess(accountId, parsed.data.userId, organizationId);
+    const result = await revokeAccountAccess(accountId, userId, organizationId);
     return c.json(result);
-  } catch (error) {
-    if (error instanceof AccountNotFoundError) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Account not found' } }, 404);
-    }
-    if (error instanceof MemberNotFoundError) {
-      return c.json(
-        { error: { code: 'NOT_FOUND', message: 'User is not a member of this account' } },
-        404
-      );
-    }
-    throw error;
   }
-});
+);
 
 // GET /sharing/:accountId/members — List members with access to an account
 sharing.get(
@@ -140,9 +79,7 @@ sharing.get(
   async (c) => {
     const accountId = c.get('accountId');
     const members = await listAccountMembers(accountId);
-    if (!members) {
-      return c.json({ error: { code: 'NOT_FOUND', message: 'Account not found' } }, 404);
-    }
+    if (!members) throw new NotFoundError('Account not found');
     return c.json({ data: members });
   }
 );

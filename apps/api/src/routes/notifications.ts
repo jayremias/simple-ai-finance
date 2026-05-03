@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { NotFoundError, UnauthorizedError } from '@/lib/errors';
 import type { AuthVariables } from '@/middleware/auth';
 import { requireAuth } from '@/middleware/auth';
 import { listNotifications, markAsRead } from '@/services/notifications.service';
@@ -10,9 +11,7 @@ const notifications = new Hono<{ Variables: AuthVariables }>()
 // GET /notifications — List all notifications for the authenticated user
 notifications.get('/', async (c) => {
   const user = c.get('user');
-  if (!user) {
-    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
-  }
+  if (!user) throw new UnauthorizedError('Not authenticated');
 
   const data = await listNotifications(user.id);
   return c.json({ data });
@@ -21,16 +20,10 @@ notifications.get('/', async (c) => {
 // PATCH /notifications/:id/read — Mark a notification as read
 notifications.patch('/:id/read', async (c) => {
   const user = c.get('user');
-  if (!user) {
-    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
-  }
+  if (!user) throw new UnauthorizedError('Not authenticated');
 
-  const notificationId = c.req.param('id');
-  const updated = await markAsRead(notificationId, user.id);
-
-  if (!updated) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Notification not found' } }, 404);
-  }
+  const updated = await markAsRead(c.req.param('id'), user.id);
+  if (!updated) throw new NotFoundError('Notification not found');
 
   return c.json({ success: true });
 });

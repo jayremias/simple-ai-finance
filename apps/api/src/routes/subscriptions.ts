@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { NotFoundError, UnauthorizedError } from '@/lib/errors';
 import type { AuthVariables } from '@/middleware/auth';
 import { requireAuth } from '@/middleware/auth';
 import { createStripePortalSession, getSubscriptionStatus } from '@/services/subscription.service';
@@ -10,8 +11,7 @@ subscriptions.use(requireAuth);
 // GET /subscription — current subscription status
 subscriptions.get('/', async (c) => {
   const userId = c.get('user')?.id;
-  if (!userId)
-    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Authentication required' } }, 401);
+  if (!userId) throw new UnauthorizedError('Authentication required');
   const status = await getSubscriptionStatus(userId);
 
   return c.json({
@@ -26,15 +26,12 @@ subscriptions.get('/', async (c) => {
 // POST /subscription/portal — create Stripe billing portal session
 subscriptions.post('/portal', async (c) => {
   const userId = c.get('user')?.id;
-  if (!userId)
-    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Authentication required' } }, 401);
+  if (!userId) throw new UnauthorizedError('Authentication required');
   const returnUrl = 'moneylens://profile';
 
   const url = await createStripePortalSession(userId, returnUrl);
 
-  if (!url) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'No Stripe subscription found' } }, 404);
-  }
+  if (!url) throw new NotFoundError('No Stripe subscription found');
 
   return c.json({ url });
 });

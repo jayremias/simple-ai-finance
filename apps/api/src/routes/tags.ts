@@ -1,11 +1,13 @@
 import { createTagSchema } from '@moneylens/shared';
 import { Hono } from 'hono';
+import { NotFoundError } from '@/lib/errors';
 import { requireAuth } from '@/middleware/auth';
 import {
   type OrgMembershipVariables,
   requireActiveOrg,
   requireOrgMembership,
 } from '@/middleware/organization';
+import { validate } from '@/middleware/validate';
 import { createTag, deleteTag, listTags } from '@/services/tags.service';
 
 const tags = new Hono<{ Variables: OrgMembershipVariables }>()
@@ -28,25 +30,11 @@ tags.get('/', async (c) => {
 });
 
 // POST /tags
-tags.post('/', async (c) => {
+tags.post('/', validate('json', createTagSchema), async (c) => {
   const organizationId = c.get('organizationId');
+  const data = c.req.valid('json');
 
-  const body = await c.req.json();
-  const parsed = createTagSchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request body',
-          details: parsed.error.flatten(),
-        },
-      },
-      400
-    );
-  }
-
-  const created = await createTag(organizationId, parsed.data);
+  const created = await createTag(organizationId, data);
   return c.json(
     {
       ...created,
@@ -64,7 +52,7 @@ tags.delete('/:id', async (c) => {
 
   const deleted = await deleteTag(id, organizationId);
   if (!deleted) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Tag not found' } }, 404);
+    throw new NotFoundError('Tag not found');
   }
   return c.json({ success: true });
 });
