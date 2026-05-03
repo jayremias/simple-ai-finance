@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { StatusCodes } from 'http-status-codes';
 import { upsertSubscription } from '@/services/subscription.service';
 
 const ACTIVE_EVENT_TYPES = new Set([
@@ -34,7 +35,10 @@ webhooks.post('/webhooks/revenuecat', async (c) => {
   if (secret) {
     const authHeader = c.req.header('Authorization');
     if (authHeader !== secret) {
-      return c.json({ error: { code: 'UNAUTHORIZED', message: 'Invalid webhook secret' } }, 401);
+      return c.json(
+        { error: { code: 'UNAUTHORIZED', message: 'Invalid webhook secret' } },
+        StatusCodes.UNAUTHORIZED
+      );
     }
   }
 

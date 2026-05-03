@@ -1,18 +1,17 @@
 import { importStatementSchema } from '@moneylens/shared';
 import { Hono } from 'hono';
+import { StatusCodes } from 'http-status-codes';
 import type { AuthVariables } from '@/middleware/auth';
 import { requireAuth } from '@/middleware/auth';
 import { requireActiveOrg, requireOrgMembership } from '@/middleware/organization';
 import { getStatementUploadUrl, importStatement } from '@/services/statement.service';
 
-const statements = new Hono<{ Variables: AuthVariables }>()
-  .basePath('/statements')
-  .use(requireAuth);
+const statements = new Hono<{ Variables: AuthVariables }>().use(requireAuth);
 
 // POST /statements/upload-url
 statements.post('/upload-url', async (c) => {
   const result = await getStatementUploadUrl();
-  return c.json(result, 201);
+  return c.json(result, StatusCodes.CREATED);
 });
 
 // POST /statements/import
@@ -30,7 +29,7 @@ statements.post('/import', requireActiveOrg, requireOrgMembership(), async (c) =
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 

@@ -1,5 +1,7 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { MINUTE_IN_SECONDS } from '@moneylens/shared';
+import { S3Error } from '../errors/S3Error';
 import { env } from './env';
 
 const s3 = new S3Client({
@@ -21,7 +23,8 @@ export async function getPresignedUploadUrl(key: string): Promise<string> {
     Bucket: env.S3_RECEIPT_BUCKET,
     Key: key,
   });
-  return getSignedUrl(s3, command, { expiresIn: 300 }); // 5 minutes
+
+  return getSignedUrl(s3, command, { expiresIn: 5 * MINUTE_IN_SECONDS });
 }
 
 export async function getObject(key: string): Promise<Buffer> {
@@ -29,10 +32,13 @@ export async function getObject(key: string): Promise<Buffer> {
     Bucket: env.S3_RECEIPT_BUCKET,
     Key: key,
   });
+
   const response = await s3.send(command);
+
   if (!response.Body) {
-    throw new Error(`S3 object not found: ${key}`);
+    throw new S3Error('OBJECT_NOT_FOUND', `S3 object not found: ${key}`);
   }
+
   const bytes = await response.Body.transformToByteArray();
   return Buffer.from(bytes);
 }

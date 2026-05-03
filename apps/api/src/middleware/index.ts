@@ -1,3 +1,4 @@
+import { MINUTE_IN_SECONDS } from '@moneylens/shared';
 import type { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { requestId } from 'hono/request-id';
@@ -30,7 +31,7 @@ export function setupMiddleware(app: Hono<{ Variables: AuthVariables }>) {
       origin: origins,
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization'],
-      maxAge: 600,
+      maxAge: 10 * MINUTE_IN_SECONDS,
       credentials: true,
     })
   );

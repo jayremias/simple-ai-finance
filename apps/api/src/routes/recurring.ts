@@ -4,6 +4,7 @@ import {
   updateRecurringRuleSchema,
 } from '@moneylens/shared';
 import { Hono } from 'hono';
+import { StatusCodes } from 'http-status-codes';
 import { requireAuth } from '@/middleware/auth';
 import {
   type OrgMembershipVariables,
@@ -21,7 +22,6 @@ import {
 } from '@/services/recurring.service';
 
 const recurring = new Hono<{ Variables: OrgMembershipVariables }>()
-  .basePath('/recurring')
   .use(requireAuth)
   .use(requireActiveOrg)
   .use(requireOrgMembership());
@@ -41,12 +41,12 @@ recurring.post('/', async (c) => {
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 
   const rule = await createRecurringRule(organizationId, parsed.data);
-  return c.json(rule, 201);
+  return c.json(rule, StatusCodes.CREATED);
 });
 
 // GET /recurring
@@ -63,7 +63,7 @@ recurring.get('/', async (c) => {
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 
@@ -77,7 +77,10 @@ recurring.get('/:id', async (c) => {
 
   const rule = await getRecurringRuleById(c.req.param('id'), organizationId);
   if (!rule) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } }, 404);
+    return c.json(
+      { error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } },
+      StatusCodes.NOT_FOUND
+    );
   }
   return c.json(rule);
 });
@@ -97,13 +100,16 @@ recurring.patch('/:id', async (c) => {
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 
   const updated = await updateRecurringRule(c.req.param('id'), organizationId, parsed.data);
   if (!updated) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } }, 404);
+    return c.json(
+      { error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } },
+      StatusCodes.NOT_FOUND
+    );
   }
   return c.json(updated);
 });
@@ -114,7 +120,10 @@ recurring.delete('/:id', async (c) => {
 
   const deleted = await deleteRecurringRule(c.req.param('id'), organizationId);
   if (!deleted) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } }, 404);
+    return c.json(
+      { error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } },
+      StatusCodes.NOT_FOUND
+    );
   }
   return c.json({ success: true });
 });
@@ -125,7 +134,10 @@ recurring.post('/:id/pause', async (c) => {
 
   const paused = await pauseRecurringRule(c.req.param('id'), organizationId);
   if (!paused) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } }, 404);
+    return c.json(
+      { error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } },
+      StatusCodes.NOT_FOUND
+    );
   }
   return c.json(paused);
 });
@@ -136,7 +148,10 @@ recurring.post('/:id/resume', async (c) => {
 
   const resumed = await resumeRecurringRule(c.req.param('id'), organizationId);
   if (!resumed) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } }, 404);
+    return c.json(
+      { error: { code: 'NOT_FOUND', message: 'Recurring rule not found' } },
+      StatusCodes.NOT_FOUND
+    );
   }
   return c.json(resumed);
 });

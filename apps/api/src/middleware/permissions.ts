@@ -1,58 +1,9 @@
 import type { Context } from 'hono';
 import { createMiddleware } from 'hono/factory';
-import type { PlatformPermission } from '@/lib/permissions/constants';
-import { type PLATFORM_ROLES, platformRoleHasPermission } from '@/lib/permissions/constants';
+import { StatusCodes } from 'http-status-codes';
 import { resolveUserAccountAccess } from '@/services/accounts.service';
 import { getAccountIdForTransaction } from '@/services/transactions.service';
 import type { AuthVariables } from './auth';
-
-// ---------------------------------------------------------------------------
-// Platform permission middleware
-// ---------------------------------------------------------------------------
-
-/**
- * Checks that the authenticated user's platform role includes the given
- * permission. Returns 401 if unauthenticated, 403 if the role lacks access.
- *
- * Zero DB queries — resolves entirely from the session context.
- * Must be used after `sessionMiddleware` + `requireAuth`.
- */
-export function requirePlatformPermission(permission: PlatformPermission) {
-  return createMiddleware<{ Variables: AuthVariables }>(async (c, next) => {
-    const user = c.get('user');
-    if (!user) {
-      return c.json(
-        {
-          error: {
-            code: 'UNAUTHORIZED',
-            message: 'Authentication required',
-          },
-        },
-        401
-      );
-    }
-
-    const role = (user.role ?? 'user') as keyof typeof PLATFORM_ROLES;
-
-    if (!platformRoleHasPermission(role, permission)) {
-      return c.json(
-        {
-          error: {
-            code: 'FORBIDDEN',
-            message: 'Insufficient permissions',
-          },
-        },
-        403
-      );
-    }
-
-    await next();
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Account permission middleware
-// ---------------------------------------------------------------------------
 
 export type AccountRole = 'owner' | 'editor' | 'viewer';
 
@@ -94,7 +45,7 @@ export function requireAccountAccess(
             message: 'Authentication required',
           },
         },
-        401
+        StatusCodes.UNAUTHORIZED
       );
     }
 
@@ -107,7 +58,7 @@ export function requireAccountAccess(
             message: 'Account ID required',
           },
         },
-        400
+        StatusCodes.BAD_REQUEST
       );
     }
 
@@ -120,7 +71,7 @@ export function requireAccountAccess(
             message: 'No access to this account',
           },
         },
-        403
+        StatusCodes.FORBIDDEN
       );
     }
 
@@ -134,7 +85,7 @@ export function requireAccountAccess(
             message: 'Insufficient permissions',
           },
         },
-        403
+        StatusCodes.FORBIDDEN
       );
     }
 

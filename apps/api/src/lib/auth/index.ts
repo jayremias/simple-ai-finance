@@ -1,4 +1,10 @@
 import { expo } from '@better-auth/expo';
+import {
+  DAY_IN_SECONDS,
+  HOUR_IN_SECONDS,
+  MINUTE_IN_SECONDS,
+  WEEK_IN_SECONDS,
+} from '@moneylens/shared';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { admin, bearer, organization } from 'better-auth/plugins';
@@ -43,6 +49,7 @@ export const auth = betterAuth({
     autoSignIn: true,
     requireEmailVerification: rootEnv.NODE_ENV === 'production',
     sendResetPassword: async ({ user, url }) => {
+      // TODO: extract the email
       void sendEmail({
         to: user.email,
         subject: 'Reset your MoneyLens password',
@@ -53,6 +60,7 @@ export const auth = betterAuth({
 
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
+      // TODO: extract the email
       void sendEmail({
         to: user.email,
         subject: 'Verify your MoneyLens email',
@@ -61,7 +69,7 @@ export const auth = betterAuth({
     },
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-    expiresIn: 3600,
+    expiresIn: HOUR_IN_SECONDS,
   },
 
   socialProviders: {
@@ -84,12 +92,12 @@ export const auth = betterAuth({
   },
 
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
-    updateAge: 60 * 60 * 24, // refresh daily
-    freshAge: 60 * 60, // 1 hour — required for account deletion without password
+    expiresIn: WEEK_IN_SECONDS,
+    updateAge: DAY_IN_SECONDS,
+    freshAge: HOUR_IN_SECONDS, // required for account deletion without password
     cookieCache: {
       enabled: true,
-      maxAge: 5 * 60, // 5 minutes
+      maxAge: 5 * MINUTE_IN_SECONDS,
     },
   },
 

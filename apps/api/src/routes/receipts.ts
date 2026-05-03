@@ -1,15 +1,16 @@
 import { extractReceiptSchema } from '@moneylens/shared';
 import { Hono } from 'hono';
+import { StatusCodes } from 'http-status-codes';
 import type { AuthVariables } from '@/middleware/auth';
 import { requireAuth } from '@/middleware/auth';
 import { createUploadUrl, extractFromKey } from '@/services/receipt.service';
 
-const receipts = new Hono<{ Variables: AuthVariables }>().basePath('/receipts').use(requireAuth);
+const receipts = new Hono<{ Variables: AuthVariables }>().use(requireAuth);
 
 // POST /receipts/upload-url
 receipts.post('/upload-url', async (c) => {
   const result = await createUploadUrl();
-  return c.json(result, 201);
+  return c.json(result, StatusCodes.CREATED);
 });
 
 // POST /receipts/extract
@@ -25,7 +26,7 @@ receipts.post('/extract', async (c) => {
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 

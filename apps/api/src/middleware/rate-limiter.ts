@@ -1,3 +1,4 @@
+import { MINUTE_IN_MILISECONDS } from '@moneylens/shared';
 import { createMiddleware } from 'hono/factory';
 import { rateLimiter } from 'hono-rate-limiter';
 
@@ -20,7 +21,7 @@ function getClientKey(c: { req: { header: (name: string) => string | undefined }
 export function createLimiter(options: RateLimiterOptions = {}) {
   if (isTest) return noopMiddleware;
 
-  const { windowMs = 15 * 60 * 1000, limit = 100 } = options;
+  const { windowMs = 15 * MINUTE_IN_MILISECONDS, limit = 100 } = options;
 
   return rateLimiter({
     windowMs,

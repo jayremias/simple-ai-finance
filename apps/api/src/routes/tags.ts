@@ -1,5 +1,6 @@
 import { createTagSchema } from '@moneylens/shared';
 import { Hono } from 'hono';
+import { StatusCodes } from 'http-status-codes';
 import { requireAuth } from '@/middleware/auth';
 import {
   type OrgMembershipVariables,
@@ -9,7 +10,6 @@ import {
 import { createTag, deleteTag, listTags } from '@/services/tags.service';
 
 const tags = new Hono<{ Variables: OrgMembershipVariables }>()
-  .basePath('/tags')
   .use(requireAuth)
   .use(requireActiveOrg)
   .use(requireOrgMembership());
@@ -42,7 +42,7 @@ tags.post('/', async (c) => {
           details: parsed.error.flatten(),
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
 
@@ -53,7 +53,7 @@ tags.post('/', async (c) => {
       createdAt: created.createdAt.toISOString(),
       updatedAt: created.updatedAt.toISOString(),
     },
-    201
+    StatusCodes.CREATED
   );
 });
 
@@ -64,7 +64,10 @@ tags.delete('/:id', async (c) => {
 
   const deleted = await deleteTag(id, organizationId);
   if (!deleted) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Tag not found' } }, 404);
+    return c.json(
+      { error: { code: 'NOT_FOUND', message: 'Tag not found' } },
+      StatusCodes.NOT_FOUND
+    );
   }
   return c.json({ success: true });
 });

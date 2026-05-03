@@ -1,3 +1,4 @@
+import { HOUR_IN_MILISECONDS } from '@moneylens/shared';
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { session, user } from '@/lib/db/schema';
@@ -52,7 +53,7 @@ export async function createTestSession(
     id: crypto.randomUUID(),
     userId,
     token,
-    expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+    expiresAt: new Date(Date.now() + HOUR_IN_MILISECONDS),
     createdAt: new Date(),
     updatedAt: new Date(),
     activeOrganizationId: opts.activeOrganizationId ?? null,

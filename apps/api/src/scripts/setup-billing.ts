@@ -13,6 +13,7 @@
  *   bun run src/scripts/setup-billing.ts
  */
 
+import { StatusCodes } from 'http-status-codes';
 import Stripe from 'stripe';
 import { z } from 'zod';
 
@@ -54,7 +55,7 @@ async function rcRequest(method: string, path: string, body?: unknown): Promise<
   if (!response.ok) {
     const error = data as { message?: string };
     // 409 = already exists — treat as success for idempotency
-    if (response.status === 409) return data;
+    if (response.status === StatusCodes.CONFLICT) return data;
     throw new Error(`RC API ${method} ${path} failed ${response.status}: ${error.message}`);
   }
 

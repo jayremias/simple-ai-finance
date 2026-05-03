@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { createMiddleware } from 'hono/factory';
+import { StatusCodes } from 'http-status-codes';
 import { db } from '@/lib/db';
 import { member } from '@/lib/db/schema/organization';
 import type { AuthVariables } from './auth';
@@ -36,7 +37,7 @@ export const requireActiveOrg = createMiddleware<{ Variables: OrgVariables }>(as
           message: 'No active organization. Set an active organization first.',
         },
       },
-      400
+      StatusCodes.BAD_REQUEST
     );
   }
   c.set('organizationId', organizationId);
@@ -62,7 +63,10 @@ export function requireOrgMembership(minimumRole: 'owner' | 'editor' | 'member' 
     const organizationId = c.get('organizationId');
 
     if (!user) {
-      return c.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
+      return c.json(
+        { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
+        StatusCodes.UNAUTHORIZED
+      );
     }
 
     const [orgMember] = await db
@@ -74,13 +78,16 @@ export function requireOrgMembership(minimumRole: 'owner' | 'editor' | 'member' 
     if (!orgMember) {
       return c.json(
         { error: { code: 'FORBIDDEN', message: 'Not a member of this organization' } },
-        403
+        StatusCodes.FORBIDDEN
       );
     }
 
     const memberRoleLevel = roleLevel[orgMember.role as keyof typeof roleLevel] ?? 0;
     if (memberRoleLevel < roleLevel[minimumRole]) {
-      return c.json({ error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } }, 403);
+      return c.json(
+        { error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } },
+        StatusCodes.FORBIDDEN
+      );
     }
 
     c.set('orgRole', orgMember.role);
