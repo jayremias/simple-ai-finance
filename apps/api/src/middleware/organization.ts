@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { createMiddleware } from 'hono/factory';
 import { db } from '@/lib/db';
 import { member } from '@/lib/db/schema/organization';
+import { hasMinimumOrgRole, type OrgRole } from '@/lib/permissions/role-hierarchy';
 import type { AuthVariables } from './auth';
 
 // ---------------------------------------------------------------------------
@@ -54,9 +55,7 @@ export const requireActiveOrg = createMiddleware<{ Variables: OrgVariables }>(as
  *
  * Must be used after `requireActiveOrg`.
  */
-export function requireOrgMembership(minimumRole: 'owner' | 'editor' | 'member' = 'member') {
-  const roleLevel = { owner: 3, editor: 2, member: 1 } as const;
-
+export function requireOrgMembership(minimumRole: OrgRole = 'member') {
   return createMiddleware<{ Variables: OrgMembershipVariables }>(async (c, next) => {
     const user = c.get('user');
     const organizationId = c.get('organizationId');
@@ -78,8 +77,7 @@ export function requireOrgMembership(minimumRole: 'owner' | 'editor' | 'member' 
       );
     }
 
-    const memberRoleLevel = roleLevel[orgMember.role as keyof typeof roleLevel] ?? 0;
-    if (memberRoleLevel < roleLevel[minimumRole]) {
+    if (!hasMinimumOrgRole(orgMember.role, minimumRole)) {
       return c.json({ error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } }, 403);
     }
 

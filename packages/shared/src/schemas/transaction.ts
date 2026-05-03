@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { tagResponseSchema } from './tag';
 
 export const TRANSACTION_TYPES = ['income', 'expense', 'transfer'] as const;
+export type TransactionType = (typeof TRANSACTION_TYPES)[number];
 
 export const createTransactionSchema = z.object({
   accountId: z.string(),

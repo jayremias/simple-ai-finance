@@ -1,8 +1,10 @@
 import type {
   CreateRecurringRuleInput,
+  Frequency,
   ListRecurringRulesInput,
   RecurringRuleListResponse,
   RecurringRuleResponse,
+  RecurringType,
   UpdateRecurringRuleInput,
 } from '@moneylens/shared';
 import { addDays, addMonths, addWeeks, addYears, format } from 'date-fns';
@@ -12,22 +14,19 @@ import { recurringRule } from '@/lib/db/schema/recurring';
 import { team } from '@/lib/db/schema/team';
 import { transaction } from '@/lib/db/schema/transaction';
 import { NotFoundError } from '@/lib/errors';
+import { decodeCursor, encodeCursor } from '@/lib/pagination/cursor';
+import { toSignedAmount } from '@/lib/transactions/signed-amount';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 type RuleRow = typeof recurringRule.$inferSelect;
-type Frequency = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+type RuleCursor = { createdAt: string; id: string };
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Converts a positive amount to a signed integer based on transaction type */
-function toSignedAmount(amount: number, type: 'income' | 'expense'): number {
-  return type === 'income' ? amount : -amount;
-}
 
 /** Calculates the next due date given the current date and frequency */
 export function calculateNextDueDate(currentDate: string, frequency: Frequency): string {
@@ -56,23 +55,6 @@ export function calculateNextDueDate(currentDate: string, frequency: Frequency):
   return format(next, 'yyyy-MM-dd');
 }
 
-/** Encodes a cursor from (createdAt, id) as base64 */
-function encodeCursor(createdAt: Date, id: string): string {
-  return Buffer.from(JSON.stringify({ createdAt: createdAt.toISOString(), id })).toString('base64');
-}
-
-/** Decodes a cursor back to (createdAt, id) */
-function decodeCursor(cursor: string): { createdAt: string; id: string } | null {
-  try {
-    return JSON.parse(Buffer.from(cursor, 'base64').toString('utf8')) as {
-      createdAt: string;
-      id: string;
-    };
-  } catch {
-    return null;
-  }
-}
-
 /** Serializes a rule row to RecurringRuleResponse */
 function serialize(rule: RuleRow): RecurringRuleResponse {
   return {
@@ -81,7 +63,7 @@ function serialize(rule: RuleRow): RecurringRuleResponse {
     accountId: rule.accountId,
     categoryId: rule.categoryId,
     name: rule.name,
-    type: rule.type as 'income' | 'expense',
+    type: rule.type as RecurringType,
     amount: rule.amount,
     frequency: rule.frequency as Frequency,
     startDate: rule.startDate,
@@ -111,7 +93,7 @@ export async function listRecurringRules(
   if (isActive !== undefined) conditions.push(eq(recurringRule.isActive, isActive));
 
   if (cursor) {
-    const decoded = decodeCursor(cursor);
+    const decoded = decodeCursor<RuleCursor>(cursor);
     if (decoded) {
       const cursorCondition = or(
         lt(recurringRule.createdAt, new Date(decoded.createdAt)),
@@ -135,7 +117,10 @@ export async function listRecurringRules(
   const items = hasNextPage ? rows.slice(0, limit) : rows;
 
   const lastItem = items[items.length - 1];
-  const nextCursor = hasNextPage && lastItem ? encodeCursor(lastItem.createdAt, lastItem.id) : null;
+  const nextCursor =
+    hasNextPage && lastItem
+      ? encodeCursor<RuleCursor>({ createdAt: lastItem.createdAt.toISOString(), id: lastItem.id })
+      : null;
 
   return {
     data: items.map(serialize),
@@ -204,9 +189,6 @@ export async function updateRecurringRule(
   organizationId: string,
   input: UpdateRecurringRuleInput
 ): Promise<RecurringRuleResponse | null> {
-  const existing = await getRecurringRuleById(id, organizationId);
-  if (!existing) return null;
-
   const updates: Record<string, unknown> = {};
   if (input.name !== undefined) updates.name = input.name;
   if (input.categoryId !== undefined) updates.categoryId = input.categoryId ?? null;
@@ -217,7 +199,7 @@ export async function updateRecurringRule(
   if (input.notes !== undefined) updates.notes = input.notes ?? null;
 
   if (Object.keys(updates).length === 0) {
-    return existing;
+    return getRecurringRuleById(id, organizationId);
   }
 
   const [updated] = await db
@@ -226,56 +208,45 @@ export async function updateRecurringRule(
     .where(and(eq(recurringRule.id, id), eq(recurringRule.organizationId, organizationId)))
     .returning();
 
-  if (!updated) return null;
-  return serialize(updated);
+  return updated ? serialize(updated) : null;
 }
 
 export async function deleteRecurringRule(
   id: string,
   organizationId: string
 ): Promise<RecurringRuleResponse | null> {
-  const existing = await getRecurringRuleById(id, organizationId);
-  if (!existing) return null;
-
-  await db
+  const [deleted] = await db
     .delete(recurringRule)
-    .where(and(eq(recurringRule.id, id), eq(recurringRule.organizationId, organizationId)));
+    .where(and(eq(recurringRule.id, id), eq(recurringRule.organizationId, organizationId)))
+    .returning();
 
-  return existing;
+  return deleted ? serialize(deleted) : null;
 }
 
 export async function pauseRecurringRule(
   id: string,
   organizationId: string
 ): Promise<RecurringRuleResponse | null> {
-  const existing = await getRecurringRuleById(id, organizationId);
-  if (!existing) return null;
-
   const [updated] = await db
     .update(recurringRule)
     .set({ isActive: false })
     .where(and(eq(recurringRule.id, id), eq(recurringRule.organizationId, organizationId)))
     .returning();
 
-  if (!updated) return null;
-  return serialize(updated);
+  return updated ? serialize(updated) : null;
 }
 
 export async function resumeRecurringRule(
   id: string,
   organizationId: string
 ): Promise<RecurringRuleResponse | null> {
-  const existing = await getRecurringRuleById(id, organizationId);
-  if (!existing) return null;
-
   const [updated] = await db
     .update(recurringRule)
     .set({ isActive: true })
     .where(and(eq(recurringRule.id, id), eq(recurringRule.organizationId, organizationId)))
     .returning();
 
-  if (!updated) return null;
-  return serialize(updated);
+  return updated ? serialize(updated) : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -308,7 +279,7 @@ export async function generateDueTransactions(asOfDate?: string): Promise<number
         accountId: rule.accountId,
         categoryId: rule.categoryId,
         type: rule.type,
-        amount: toSignedAmount(rule.amount, rule.type as 'income' | 'expense'),
+        amount: toSignedAmount(rule.amount, rule.type as RecurringType),
         date: currentDueDate,
         payee: rule.payee,
         notes: rule.notes,

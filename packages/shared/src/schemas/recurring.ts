@@ -1,7 +1,16 @@
 import { z } from 'zod';
 
-const RECURRING_TYPES = ['income', 'expense'] as const;
-const FREQUENCIES = ['daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'yearly'] as const;
+export const RECURRING_TYPES = ['income', 'expense'] as const;
+export const FREQUENCIES = [
+  'daily',
+  'weekly',
+  'biweekly',
+  'monthly',
+  'quarterly',
+  'yearly',
+] as const;
+export type RecurringType = (typeof RECURRING_TYPES)[number];
+export type Frequency = (typeof FREQUENCIES)[number];
 
 export const createRecurringRuleSchema = z.object({
   accountId: z.string(),

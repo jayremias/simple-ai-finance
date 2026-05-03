@@ -2,6 +2,7 @@ import type {
   CreateTransactionInput,
   ListTransactionsInput,
   TransactionResponse,
+  TransactionType,
   UpdateTransactionInput,
 } from '@moneylens/shared';
 import { and, desc, eq, gte, ilike, isNotNull, lt, lte, or, sql } from 'drizzle-orm';
@@ -10,6 +11,8 @@ import { tag } from '@/lib/db/schema/tag';
 import { team } from '@/lib/db/schema/team';
 import { transaction, transactionTag } from '@/lib/db/schema/transaction';
 import { DatabaseError, ForbiddenError, InvalidInputError, NotFoundError } from '@/lib/errors';
+import { decodeCursor, encodeCursor } from '@/lib/pagination/cursor';
+import { toSignedAmount } from '@/lib/transactions/signed-amount';
 import { resolveUserAccountAccess } from '@/services/accounts.service';
 
 // ---------------------------------------------------------------------------
@@ -23,31 +26,7 @@ interface TransactionWithTags extends TransactionRow {
   tags: TagRow[];
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Converts a positive amount to a signed integer based on transaction type */
-function toSignedAmount(amount: number, type: 'income' | 'expense' | 'transfer'): number {
-  return type === 'income' ? amount : -amount;
-}
-
-/** Encodes a cursor from (date, id) as base64 */
-function encodeCursor(date: string, id: string): string {
-  return Buffer.from(JSON.stringify({ date, id })).toString('base64');
-}
-
-/** Decodes a cursor back to (date, id) */
-function decodeCursor(cursor: string): { date: string; id: string } | null {
-  try {
-    return JSON.parse(Buffer.from(cursor, 'base64').toString('utf8')) as {
-      date: string;
-      id: string;
-    };
-  } catch {
-    return null;
-  }
-}
+type TxCursor = { date: string; id: string };
 
 /** Fetches tags for a list of transaction ids */
 async function fetchTagsForTransactions(txIds: string[]): Promise<Map<string, TagRow[]>> {
@@ -80,7 +59,7 @@ function serialize(tx: TransactionWithTags): TransactionResponse {
     organizationId: tx.organizationId,
     accountId: tx.accountId,
     categoryId: tx.categoryId,
-    type: tx.type as 'income' | 'expense' | 'transfer',
+    type: tx.type as TransactionType,
     amount: tx.amount,
     date: tx.date,
     payee: tx.payee,
@@ -115,7 +94,7 @@ export async function listTransactions(organizationId: string, input: ListTransa
 
   // Cursor: fetch items older than (date, id)
   if (cursor) {
-    const decoded = decodeCursor(cursor);
+    const decoded = decodeCursor<TxCursor>(cursor);
     if (decoded) {
       const cursorCondition = or(
         lt(transaction.date, decoded.date),
@@ -140,7 +119,10 @@ export async function listTransactions(organizationId: string, input: ListTransa
   const data = items.map((r) => serialize({ ...r, tags: tagMap.get(r.id) ?? [] }));
 
   const lastItem = items[items.length - 1];
-  const nextCursor = hasNextPage && lastItem ? encodeCursor(lastItem.date, lastItem.id) : null;
+  const nextCursor =
+    hasNextPage && lastItem
+      ? encodeCursor<TxCursor>({ date: lastItem.date, id: lastItem.id })
+      : null;
 
   return { data, nextCursor };
 }
@@ -297,7 +279,7 @@ export async function updateTransaction(
       // Preserve original sign: outflow is negative, inflow is positive
       updates.amount = existing.amount >= 0 ? input.amount : -input.amount;
     } else {
-      updates.amount = toSignedAmount(input.amount, existing.type as 'income' | 'expense');
+      updates.amount = toSignedAmount(input.amount, existing.type as TransactionType);
     }
   }
 

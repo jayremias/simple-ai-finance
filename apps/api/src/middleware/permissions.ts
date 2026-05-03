@@ -2,6 +2,7 @@ import type { Context } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import type { PlatformPermission } from '@/lib/permissions/constants';
 import { type PLATFORM_ROLES, platformRoleHasPermission } from '@/lib/permissions/constants';
+import { type AccountRole, hasMinimumAccountRole } from '@/lib/permissions/role-hierarchy';
 import { resolveUserAccountAccess } from '@/services/accounts.service';
 import { getAccountIdForTransaction } from '@/services/transactions.service';
 import type { AuthVariables } from './auth';
@@ -54,7 +55,7 @@ export function requirePlatformPermission(permission: PlatformPermission) {
 // Account permission middleware
 // ---------------------------------------------------------------------------
 
-export type AccountRole = 'owner' | 'editor' | 'viewer';
+export type { AccountRole } from '@/lib/permissions/role-hierarchy';
 
 /**
  * Describes where to extract the target `accountId` from the request.
@@ -124,9 +125,7 @@ export function requireAccountAccess(
       );
     }
 
-    // Check minimum role level
-    const roleLevel = { owner: 3, editor: 2, viewer: 1 } as const;
-    if (roleLevel[access.role] < roleLevel[minimumRole]) {
+    if (!hasMinimumAccountRole(access.role, minimumRole)) {
       return c.json(
         {
           error: {
